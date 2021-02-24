@@ -28,7 +28,7 @@ from ejtraderMT import Metatrader
 
 ```python
 
-# for change the host Metatrader("hostIP")
+# to change the host Metatrader("hostIP")
 mt = Metatrader()
 
 ```
