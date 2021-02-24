@@ -405,6 +405,45 @@ class Metatrader:
         main = main.loc[~main.index.duplicated(keep = 'first')]
         return main
 
+    def ShorthistoryDataFrame(self, symbol, symbols, chartTF, fromDate):
+        actives = symbols
+        main = pd.DataFrame()
+        current = pd.DataFrame()
+
+        for active in actives:
+            if active == symbol:
+                if(chartTF == 'TICK'):
+                    data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * 60))))
+                    main = pd.DataFrame(data['data'], columns=['date', 'bid', 'ask'])
+                    main = main.set_index(['date'])
+                    main.index = pd.to_datetime(main.index,unit='s')
+                    self.api.Command(action="RESET")
+                else:
+                    data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * (self.timeframe_to_sec(chartTF) * 60)))))
+                    main = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','volume','spread'])
+                    main = main.set_index(['date'])
+                    main.index = pd.to_datetime(main.index,unit='s')
+                    self.api.Command(action="RESET")
+                
+            else:
+                if(chartTF == 'TICK'):
+                    data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * 60))))
+                    current = pd.DataFrame(data['data'], columns=['date', 'bid', 'ask'])
+                    current = current.set_index(['date'])
+                    current.index = pd.to_datetime(current.index,unit='s')
+                    current.columns = [f'BID{active}',f'ASK{active}']
+                    self.api.Command(action="RESET")
+                    main = pd.merge(main,current, how='inner', left_index=True, right_index=True)
+                else:
+                    data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * (self.timeframe_to_sec(chartTF) * 60)))))
+                    current = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','volume','spread'])
+                    current = current.set_index(['date'])
+                    current.index = pd.to_datetime(current.index,unit='s')
+                    current.columns = [f'OPEN{active}',f'HIGH{active}',f'LOW{active}',f'CLOSE{active}',f'VOLUME{active}',f'SPREAD{active}']
+                    self.api.Command(action="RESET")
+                    main = pd.merge(main,current, how='inner', left_index=True, right_index=True)
+        main = main.loc[~main.index.duplicated(keep = 'first')]
+        return main
 
 
     def live(self,symbol, chartTF):
