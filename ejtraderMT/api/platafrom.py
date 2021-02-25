@@ -346,11 +346,13 @@ class Metatrader:
             data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
             data_frame = pd.DataFrame(data['data'], columns=['date', 'bid', 'ask'])
             data_frame = data_frame.set_index(['date'])
+            data_frame.index = pd.to_datetime(data_frame.index,unit='s')
             self.api.Command(action="RESET")
         else:
             data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
             data_frame = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','volume','spread'])
             data_frame = data_frame.set_index(['date'])
+            data_frame.index = pd.to_datetime(data_frame.index,unit='s')
             self.api.Command(action="RESET")
         return data_frame
     def timeframe_to_sec(self, timeframe):
