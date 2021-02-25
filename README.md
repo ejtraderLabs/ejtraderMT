@@ -133,7 +133,9 @@ mt.cancel_all()
 mt.close_all()
 ```
 
-#### History fromDate toDate
+# History Dataframe Ready
+
+#### History from Date to Date Dataframe
 
 ```python
 symbol = "EURUSD"
@@ -141,7 +143,7 @@ timeframe = "M1"
 fromDate = "24/02/2021"
 toDate = "24/02/2021"
 
-history = mt.history(symbol,timeframe,fromDate,toDate)
+history = mt.historyDataframe(symbol,timeframe,fromDate,toDate)
 print(history)
 
                         open     high      low    close  volume  spread
@@ -186,14 +188,14 @@ date
 
 ```
 
-#### Short History
+#### Short History Dataframe
 
 ```python
 
 symbol = "EURUSD"
 timeframe = "M1"
 
-history = mt.Shorthistory(symbol,timeframe,1)
+history = mt.ShorthistoryDataframe(symbol,timeframe,10)
 print(history)
 
                         open     high      low    close  volume  spread
@@ -238,7 +240,7 @@ date
 
 ```
 
-#### History multiple symbol merged DataFrame
+# History multiple symbol merged DataFrame
 
 ```python
 from ejtraderMT import Metatrader
@@ -251,7 +253,7 @@ timeframe = "M1"
 fromDate = "01/01/2021"
 toDate = "10/01/2021"
 
-data = api.historyDataFrame(symbol,symbols,timeframe,fromDate,toDate)
+data = api.historyMultiDataFrame(symbol,symbols,timeframe,fromDate,toDate)
 
 print(data)
    open     high      low    close  volume  spread  OPENGBPUSD  HIGHGBPUSD  LOWGBPUSD  CLOSEGBPUSD  VOLUMEGBPUSD  SPREADGBPUSD  OPENAUDUSD  HIGHAUDUSD  LOWAUDUSD  CLOSEAUDUSD  VOLUMEAUDUSD  SPREADAUDUSD
@@ -283,7 +285,7 @@ symbols = [symbol,"GBPUSD","AUDUSD"]
 timeframe = "M1"
 
 
-data = api.ShorthistoryDataFrame(symbol,symbols,timeframe,10)
+data = api.ShorthistoryMultiDataFrame(symbol,symbols,timeframe,10)
 
 
 print(data)
@@ -304,7 +306,34 @@ date
 
 ```
 
-#### Live data and streaming events
+# history dictionary "array"
+
+#### Short History from Date to Date dict
+
+```python
+symbol = "EURUSD"
+timeframe = "M1"
+
+
+history = mt.Shorthistory(symbol,timeframe,10)
+print(history)
+```
+
+#### History fromDate toDate dict
+
+```python
+symbol = "EURUSD"
+timeframe = "M1"
+fromDate = "24/02/2021"
+toDate = "24/02/2021"
+
+history = mt.history(symbol,timeframe,fromDate,toDate)
+print(history)
+
+
+```
+
+# Live data and streaming events
 
 ```python
 from ejtraderMT import Metatrader

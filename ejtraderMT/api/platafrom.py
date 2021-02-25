@@ -317,7 +317,30 @@ class Metatrader:
     def orders(self):
         return json.loads(json.dumps(self.api.Command(action="ORDERS")))
 
+
+    def Shorthistory(self, symbol, chartTF, fromDate, toDate):
+       
+        if(chartTF == 'TICK'):
+            data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * 60))))
+            self.api.Command(action="RESET")
+        else:
+            data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * (self.timeframe_to_sec(chartTF) * 60)))))
+            self.api.Command(action="RESET")
+        return data
+
+
     def history(self, symbol, chartTF, fromDate, toDate):
+       
+        if(chartTF == 'TICK'):
+            data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
+            self.api.Command(action="RESET")
+        else:
+            data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
+            self.api.Command(action="RESET")
+        return data
+
+
+    def historyDataFrame(self, symbol, chartTF, fromDate, toDate):
        
         if(chartTF == 'TICK'):
             data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
@@ -347,7 +370,7 @@ class Metatrader:
             return TIMECANDLE[timeframe]  
 
 
-    def Shorthistory(self, symbol, chartTF, fromDate):
+    def ShorthistoryDataframe(self, symbol, chartTF, fromDate):
         
         if(chartTF == 'TICK'):
             data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * 60))))
@@ -365,7 +388,7 @@ class Metatrader:
    
 
 
-    def historyDataFrame(self, symbol, symbols, chartTF, fromDate, toDate):
+    def historyMultiDataFrame(self, symbol, symbols, chartTF, fromDate, toDate):
         actives = symbols
         main = pd.DataFrame()
         current = pd.DataFrame()
@@ -405,7 +428,7 @@ class Metatrader:
         main = main.loc[~main.index.duplicated(keep = 'first')]
         return main
 
-    def ShorthistoryDataFrame(self, symbol, symbols, chartTF, fromDate):
+    def ShorthistoryMultiDataFrame(self, symbol, symbols, chartTF, fromDate):
         actives = symbols
         main = pd.DataFrame()
         current = pd.DataFrame()
@@ -446,13 +469,7 @@ class Metatrader:
         return main
 
 
-    def live(self,symbol, chartTF):
-        self.api.Command(action="RESET")
-        for active in symbol:
-            self.api.Command(action="CONFIG",  symbol=active, chartTF=chartTF)
-            print(f'subscribed : {active}')
-            time.sleep(1)
-         
+    
     
 
   

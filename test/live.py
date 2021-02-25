@@ -29,8 +29,8 @@ def event():
         event = connect.recv_json()
         print(event)
 
-       
-       
+
+
 
 t = Thread(target=price, daemon=True)
 t.start()

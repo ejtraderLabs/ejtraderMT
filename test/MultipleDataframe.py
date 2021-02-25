@@ -11,7 +11,7 @@ toDate = "01/02/2021"
 
 data = api.historyDataFrame(symbol,symbols,timeframe,fromDate,toDate)
 
-api.
+
 
 print(data)
 
