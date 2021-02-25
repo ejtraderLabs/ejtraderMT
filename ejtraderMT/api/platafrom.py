@@ -340,7 +340,7 @@ class Metatrader:
         return data
 
 
-    def historyDataFrame(self, symbol, chartTF, fromDate, toDate):
+    def historyDataframe(self, symbol, chartTF, fromDate, toDate):
        
         if(chartTF == 'TICK'):
             data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
