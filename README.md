@@ -1,10 +1,16 @@
 # Python Metatrader DataFrame API
 
-for the server side you need to download Metatrader docker from
+## Instalation for docker Metatrader 5 Server API
 
-https://github.com/traderpedroso/ejtraderMTServer
+###### first make sure you have docker installed on your pc
 
-## Installation
+###### run this command on your terminal or powershell
+
+```
+docker run --rm -dit -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -p 15558:15558 --name ejtradermt_server -v feed:/data sostrader/ejtradermt_server:stable
+```
+
+## Installation for Python API
 
 ```
 pip install ejtraderMT
