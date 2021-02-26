@@ -17,7 +17,7 @@ def requirements(filename):
 
 setup(
     name='ejtraderMT',
-    version='1.0.4',
+    version='1.0.5',
     packages=find_packages(),
     url='https://ejtrader_mt.readthedocs.io/',
     download_url='https://ejtrader.com',

@@ -367,7 +367,7 @@ class Metatrader:
             self.api.Command(action="RESET")
         else:
             data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
-            data_frame = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','volume','spread'])
+            data_frame = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','tick_volume','real_volume','spread'])
             data_frame = data_frame.set_index(['date'])
             if localTime:
                 data_frame.index = pd.to_datetime(data_frame.index,unit='s')
@@ -375,6 +375,9 @@ class Metatrader:
                 data_frame.index = data_frame.index.tz_convert(self.mytimezone)
             self.api.Command(action="RESET")
         return data_frame
+
+
+
     def timeframe_to_sec(self, timeframe):
             # Timeframe dictionary
             TIMECANDLE = {
@@ -405,7 +408,7 @@ class Metatrader:
             self.api.Command(action="RESET")
         else:
             data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * (self.timeframe_to_sec(chartTF) * 60)))))
-            data_frame = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','volume','spread'])
+            data_frame = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','tick_volume','real_volume','spread'])
             data_frame = data_frame.set_index(['date'])
             if localTime:
                 data_frame.index = pd.to_datetime(data_frame.index,unit='s')
@@ -434,7 +437,7 @@ class Metatrader:
                     self.api.Command(action="RESET")
                 else:
                     data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
-                    main = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','volume','spread'])
+                    main = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','tick_volume','real_volume','spread'])
                     main = main.set_index(['date'])
                     if localTime:
                         main.index = pd.to_datetime(main.index,unit='s')
@@ -456,13 +459,14 @@ class Metatrader:
                     main = pd.merge(main,current, how='inner', left_index=True, right_index=True)
                 else:
                     data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
-                    current = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','volume','spread'])
+                    current = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','tick_volume','real_volume','spread'])
                     current = current.set_index(['date'])
                     if localTime:
                         current.index = pd.to_datetime(current.index,unit='s')
                         current.index = current.index.tz_localize(self.utcoffset)
                         current.index = current.index.tz_convert(self.mytimezone)
-                    current.columns = [f'OPEN{active}',f'HIGH{active}',f'LOW{active}',f'CLOSE{active}',f'VOLUME{active}',f'SPREAD{active}']
+                    active = active.lower()
+                    current.columns = [f'open_{active}',f'high_{active}',f'low_{active}',f'close_{active}',f'tick_volume_{active}',f'real_volume_{active}',f'spread_{active}']
                     self.api.Command(action="RESET")
                     main = pd.merge(main,current, how='inner', left_index=True, right_index=True)
         main = main.loc[~main.index.duplicated(keep = 'first')]
@@ -486,7 +490,7 @@ class Metatrader:
                     self.api.Command(action="RESET")
                 else:
                     data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * (self.timeframe_to_sec(chartTF) * 60)))))
-                    main = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','volume','spread'])
+                    main = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','tick_volume','real_volume','spread'])
                     main = main.set_index(['date'])
                     if localTime:
                         main.index = pd.to_datetime(main.index,unit='s')
@@ -508,13 +512,14 @@ class Metatrader:
                     main = pd.merge(main,current, how='inner', left_index=True, right_index=True)
                 else:
                     data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * (self.timeframe_to_sec(chartTF) * 60)))))
-                    current = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','volume','spread'])
+                    current = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','tick_volume','real_volume','spread'])
                     current = current.set_index(['date'])
                     if localTime:
                         current.index = pd.to_datetime(current.index,unit='s')
                         current.index = current.index.tz_localize(self.utcoffset)
                         current.index = current.index.tz_convert(self.mytimezone)
-                    current.columns = [f'OPEN{active}',f'HIGH{active}',f'LOW{active}',f'CLOSE{active}',f'VOLUME{active}',f'SPREAD{active}']
+                    active = active.lower()
+                    current.columns = [f'open_{active}',f'high_{active}',f'low_{active}',f'close_{active}',f'tick_volume_{active}',f'real_volume_{active}',f'spread_{active}']
                     self.api.Command(action="RESET")
                     main = pd.merge(main,current, how='inner', left_index=True, right_index=True)
         main = main.loc[~main.index.duplicated(keep = 'first')]
