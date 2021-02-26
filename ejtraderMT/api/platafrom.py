@@ -4,6 +4,8 @@ from .helpers.utils import convertDate
 import pandas as pd
 from datetime import datetime
 import time
+from pytz import timezone
+tz = timezone('UTC')
 
 class Functions:
     def __init__(self, host=None):
@@ -314,7 +316,7 @@ class Metatrader:
         return json.loads(json.dumps(self.api.Command(action="ORDERS")))
 
 
-    def Shorthistory(self, symbol, chartTF, fromDate, toDate):
+    def Shorthistory(self, symbol, chartTF, fromDate):
        
         if(chartTF == 'TICK'):
             data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * 60))))
