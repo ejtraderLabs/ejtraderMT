@@ -2,7 +2,7 @@
 
 for the server side you need to download Metatrader docker from
 
-https://github.com/traderpedroso/datafeed-mt5-docker
+https://github.com/traderpedroso/ejtraderMTServer
 
 ## Installation
 
