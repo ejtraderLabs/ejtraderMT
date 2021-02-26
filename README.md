@@ -36,7 +36,7 @@ from ejtraderMT import Metatrader
 
 ### Connect Metatrader 5
 
-make sure thesisAPI are load on the chart
+make sure thesisAPI expert are load on the chart
 
 ```python
 
