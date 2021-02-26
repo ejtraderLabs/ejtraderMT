@@ -7,7 +7,8 @@
 ###### run this command on your terminal or powershell
 
 ```
-docker run --rm -dit -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -p 15558:15558 --name ejtradermt_server -v feed:/data sostrader/ejtradermt_server:stable
+docker volume create ejtraderMT
+docker run -d --restart=always -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -p 15558:15558 --name ejtradermt_server -v ejtraderMT:/data sostrader/ejtradermt_server:stable
 ```
 
 or if you dont want to use docker you can download the expert and install on your Metatrader 5

@@ -9,8 +9,10 @@ symbols = [symbol,"GBPUSD","AUDUSD"]
 timeframe = "M1"
 
 
-data = api.ShorthistoryMultiDataFrame(symbol,symbols,timeframe,3,True)
+data = api.ShorthistoryMultiDataFrame(symbol,symbols,timeframe,2,True)
 
+# account = api.accountInfo()
 
+# print(account)
 print(data)
 

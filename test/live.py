@@ -4,7 +4,7 @@ from threading import Thread
 
 
 
-api = Metatrader()
+api = Metatrader('192.168.1.101')
 
 symbols = ["EURUSD","GBPUSD","AUDUSD"]
 timeframe = "TICK"

@@ -331,6 +331,13 @@ class Metatrader:
         
         return hour
 
+    def live(self,symbol, chartTF):
+        self.api.Command(action="RESET")
+        for active in symbol:
+            self.api.Command(action="CONFIG",  symbol=active, chartTF=chartTF)
+            print(f'subscribed : {active}')
+            time.sleep(1)
+
 
     def Shorthistory(self, symbol, chartTF, fromDate):
        
