@@ -12,7 +12,7 @@ docker run --rm -dit -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -
 
 or if you dont want to use docker you can download the expert and install on your Metatrader 5
 simple download the folder MQL5 from the link below and install it on the Metatrader
-https://codeload.github.com/traderpedroso/ejtraderMTServer/zip/1
+https://github.com/traderpedroso/ejtraderMTServer
 
 ## Installation for Python API
 
