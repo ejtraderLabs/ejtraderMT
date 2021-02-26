@@ -10,6 +10,10 @@
 docker run --rm -dit -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -p 15558:15558 --name ejtradermt_server -v feed:/data sostrader/ejtradermt_server:stable
 ```
 
+or you can download the expert and install on your Metatrader 5 on your local pc
+
+https://codeload.github.com/traderpedroso/ejtraderMTServer/zip/1
+
 ## Installation for Python API
 
 ```
