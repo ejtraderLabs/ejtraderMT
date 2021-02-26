@@ -143,7 +143,7 @@ timeframe = "M1"
 fromDate = "24/02/2021"
 toDate = "24/02/2021"
 
-history = mt.historyDataframe(symbol,timeframe,fromDate,toDate)
+history = mt.historyDataFrame(symbol,timeframe,fromDate,toDate)
 print(history)
 
                         open     high      low    close  volume  spread
@@ -195,7 +195,7 @@ date
 symbol = "EURUSD"
 timeframe = "M1"
 
-history = mt.ShorthistoryDataframe(symbol,timeframe,10)
+history = mt.ShorthistoryDataFrame(symbol,timeframe,10)
 print(history)
 
                         open     high      low    close  volume  spread
@@ -303,6 +303,21 @@ date
 2021-02-25 00:01:00  1.21666  1.21669  1.21650  1.21656   287.0       5     1.41404     1.41409    1.41393      1.41408          35.0            13     0.79634     0.79649    0.79631      0.79646          66.0             6
 2021-02-25 00:02:00  1.21656  1.21668  1.21652  1.21663   108.0       5     1.41408     1.41408    1.41397      1.41398          24.0            13     0.79646     0.79653    0.79645      0.79649          38.0             7
 2021-02-25 00:03:00  1.21663  1.21663  1.21640  1.21650    39.0       5     1.41400     1.41400    1.41398      1.41400           3.0            19     0.79648     0.79648    0.79637      0.79641          17.0            10
+
+```
+
+# for converting DataFrame to local time
+
+```python
+from ejtraderMT import Metatrader
+
+symbol = "EURUSD"
+timeframe = "M1"
+fromDate = "24/02/2021"
+toDate = "24/02/2021"
+
+# Example add True to end of command
+history = mt.historyDataFrame(symbol,timeframe,fromDate,toDate,True)
 
 ```
 
