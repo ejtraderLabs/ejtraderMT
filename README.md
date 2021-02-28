@@ -8,7 +8,7 @@
 
 ```
 docker volume create ejtraderMT
-docker run -d --restart=always -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -p 15558:15558 --name ejtradermt_server -v ejtraderMT:/data sostrader/ejtradermt_server:stable
+docker run -d --restart=always -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -p 15558:15558 --name ejtraderapi_server -v ejtraderMT:/data sostrader/ejtraderapi_server:stable
 ```
 
 or if you dont want to use docker you can download the expert and install on your Metatrader 5
@@ -56,14 +56,14 @@ attention tick volume is the default
 
 to use more than one option just use , example Metatrader(host='hostIP',localtime=True)
 '''
-mt = Metatrader()
+api = Metatrader()
 
 ```
 
 #### Account information
 
 ```python
-accountInfo = mt.accountInfo
+accountInfo = api.accountInfo
 print(accountInfo)
 print(accountInfo['broker'])
 print(accountInfo['balance'])
@@ -75,35 +75,35 @@ print(accountInfo['balance'])
 
 ```python
 # symbol, volume, stoploss, takeprofit, deviation
-mt.buy("EURUSD", 0.01, 1.18, 1.19, 5)
-mt.sell("EURUSD", 0.01, 1.18, 1.19, 5)
+api.buy("EURUSD", 0.01, 1.18, 1.19, 5)
+api.sell("EURUSD", 0.01, 1.18, 1.19, 5)
 ```
 
 #### Limit Orders
 
 ```python
 # symbol, volume, stoploss, takeprofit, price, deviation
-mt.buyLimit("EURUSD", 0.01, 1.17, 1.19, 1.18, 5)
-mt.sellLimit("EURUSD", 0.01, 1.20, 1.17, 1.19, 5)
+api.buyLimit("EURUSD", 0.01, 1.17, 1.19, 1.18, 5)
+api.sellLimit("EURUSD", 0.01, 1.20, 1.17, 1.19, 5)
 ```
 
 #### Stop Orders
 
 ```python
 #symbol, volume, stoploss, takeprofit, price, deviation
-mt.buyStop("EURUSD", 0.01, 1.18, 1.20, 1.19, 5)
-mt.sellStop("EURUSD", 0.01, 1.19, 1.17, 1.18, 5)
+api.buyStop("EURUSD", 0.01, 1.18, 1.20, 1.19, 5)
+api.sellStop("EURUSD", 0.01, 1.19, 1.17, 1.18, 5)
 ```
 
 #### Positions & Manipulation
 
 ```python
-positions = mt.positions
+positions = api.positions
 
 
 if 'positions' in positions:
     for position in positions['positions']:
-        mt.CloseById(position['id'])
+        api.CloseById(position['id'])
 
 
 ```
@@ -111,32 +111,32 @@ if 'positions' in positions:
 #### Orders & Manipulation
 
 ```python
-orders = mt.order
+orders = api.order
 
 if 'orders' in orders:
     for order in orders['orders']:
-        mt.CancelById(order['id'])
+        api.CancelById(order['id'])
 
 ```
 
 #### Modify possition
 
 ```python
-mt.positionModify( id, stoploss, takeprofit)
+api.positionModify( id, stoploss, takeprofit)
 
 ```
 
 #### Modify order
 
 ```python
-mt.orderModify( id, stoploss, takeprofit, price)
+api.orderModify( id, stoploss, takeprofit, price)
 
 ```
 
 #### close by symbol
 
 ```python
-mt.CloseBySymbol("EURUSD")
+api.CloseBySymbol("EURUSD")
 
 ```
 
@@ -144,20 +144,20 @@ mt.CloseBySymbol("EURUSD")
 
 ```python
 # id , volume
-mt.ClosePartial( id, volume)
+api.ClosePartial( id, volume)
 
 ```
 
 #### If you want to cancel all Orders
 
 ```python
-mt.cancel_all()
+api.cancel_all()
 ```
 
 #### if you want to close all positions
 
 ```python
-mt.close_all()
+api.close_all()
 ```
 
 # History Dataframe Ready
@@ -170,7 +170,7 @@ timeframe = "M1"
 fromDate = "20/02/2021"
 toDate = "24/02/2021"
 
-history = mt.history(symbol,timeframe,fromDate,toDate)
+history = api.history(symbol,timeframe,fromDate,toDate)
 print(history)
                         open     high      low    close  volume  spread
 date
@@ -198,7 +198,7 @@ symbol = ["EURUSD"]
 timeframe = "M1"
 fromDate = 27
 
-history = mt.history(symbol,timeframe,fromDate)
+history = api.history(symbol,timeframe,fromDate)
 print(history)
 
                         open     high      low    close  volume  spread
@@ -216,15 +216,17 @@ date
 2021-02-26 22:59:00  1.20702  1.20705  1.20702  1.20704    16.0      37
 ```
 
-# History for multiple symbols merged dataframe
+#### History for multiple symbols merged dataframe
 
 ```python
-# you can add unlimited actives to list  ["EURUSD","GBPUSD","AUDUSD"]
+# you can add unlimited actives to list  ["EURUSD","GBPUSD","AUDUSD"] etc
 symbol = ["EURUSD","GBPUSD"]
 timeframe = "M1"
-fromDate = 27
+fromDate = "20/02/2021"
+toDate = "24/02/2021"
 
-history = mt.history(symbol,timeframe,fromDate)
+
+history = api.history(symbol,timeframe,fromDate,toDate)
 print(history)
 
 
