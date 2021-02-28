@@ -63,7 +63,7 @@ api = Metatrader()
 #### Account information
 
 ```python
-accountInfo = api.accountInfo
+accountInfo = api.accountInfo()
 print(accountInfo)
 print(accountInfo['broker'])
 print(accountInfo['balance'])
