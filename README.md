@@ -222,6 +222,8 @@ t.start()
 t = Thread(target=event, daemon=True)
 t.start()
 
+while True:
+    pass
 ```
 
 # Trading and Orders Manipulation
@@ -316,9 +318,6 @@ api.cancel_all()
 ```python
 api.close_all()
 ```
-
-while True:
-pass
 
 ```
 
