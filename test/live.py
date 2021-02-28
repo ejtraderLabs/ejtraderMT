@@ -17,14 +17,14 @@ api.live(symbols,timeframe)
 
 
 def price():
-    connect = api.livePrice
+    connect = api.live_price
     while True:
         price = connect.recv_json()
         print(price)
 
 
 def event():
-    connect = api.liveEvent
+    connect = api.live_event
     while True:
         event = connect.recv_json()
         print(event)

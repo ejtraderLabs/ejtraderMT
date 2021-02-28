@@ -6,3 +6,9 @@ min-public-methods=0
 
 [FORMAT]
 max-line-length=100
+
+
+[TYPECHECK]
+# zmq.{LINGER,REQ,ROUTER,NOBLOCK,PULL} are dynamically generated and so pylint
+# doesn't see them, causing false positives.
+generated-members=LINGER,REQ,ROUTER,NOBLOCK,PULL

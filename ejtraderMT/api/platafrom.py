@@ -1,26 +1,26 @@
 import json
 import zmq
-from .helpers.utils import convertDate
 import pandas as pd
 from datetime import datetime
 import time
 from pytz import timezone
 from tzlocal import get_localzone
-tz = timezone('UTC')
+
 
 class Functions:
-    def __init__(self, host=None):
+    def __init__(self, host=None, debug=None):
         self.HOST = host or 'localhost'
         self.SYS_PORT = 15555       # REP/REQ port
         self.DATA_PORT = 15556      # PUSH/PULL port
         self.LIVE_PORT = 15557      # PUSH/PULL port
         self.EVENTS_PORT = 15558    # PUSH/PULL port
         self.INDICATOR_DATA_PORT = 15559  # REP/REQ port
-        self.CHART_DATA_PORT = 15560  # PUSH port
+        self.CHART_DATA_PORT = 15560  # PUSH 
+        self.debug = debug or True
 
         # ZeroMQ timeout in seconds
-        sys_timeout = 10
-        data_timeout = 100
+        sys_timeout = 100
+        data_timeout = 1000
 
         # initialise ZMQ context
         context = zmq.Context()
@@ -30,12 +30,14 @@ class Functions:
             self.sys_socket = context.socket(zmq.REQ)
             # set port timeout
             self.sys_socket.RCVTIMEO = sys_timeout * 1000
-            self.sys_socket.connect('tcp://{}:{}'.format(self.HOST, self.SYS_PORT))
+            self.sys_socket.connect(
+                'tcp://{}:{}'.format(self.HOST, self.SYS_PORT))
 
             self.data_socket = context.socket(zmq.PULL)
             # set port timeout
             self.data_socket.RCVTIMEO = data_timeout * 1000
-            self.data_socket.connect('tcp://{}:{}'.format(self.HOST, self.DATA_PORT))
+            self.data_socket.connect(
+                'tcp://{}:{}'.format(self.HOST, self.DATA_PORT))
 
             self.indicator_data_socket = context.socket(zmq.PULL)
             # set port timeout
@@ -203,17 +205,29 @@ class Functions:
         # send dict to server
         self._push_chart_data(message)
 
+
 class Metatrader:
 
-    def __init__(self,host=None):
+    def __init__(self, host=None, real_volume=None, localtime=None):
         self.api = Functions(host)
-        self.livePrice = self.api.live_socket()
-        self.liveEvent = self.api.streaming_socket()
-        self.mytimezone = get_localzone()
-        self.utcoffset = self.offset()
+        self.real_volume = real_volume or False
+        self.localtime = localtime or False
+        self.utc_timezone = timezone('UTC')
 
-                 
-        
+        self.live_price = self.api.live_socket()
+        self.live_event = self.api.streaming_socket()
+        self.my_timezone = get_localzone()
+        self.utc_brocker_offset = self._utc_brocker_offset()
+       
+ 
+    def accountInfo(self):
+        return self.api.Command(action="ACCOUNT")
+
+    def positions(self):
+        return self.api.Command(action="POSITIONS")
+
+    def orders(self):
+        return self.api.Command(action="ORDERS")
 
     def trade(self, symbol, actionType, volume, stoploss, takeprofit, price, deviation):
         self.api.Command(
@@ -228,24 +242,30 @@ class Metatrader:
         )
 
     def buy(self, symbol, volume, stoploss, takeprofit, deviation=5):
-        price=0
-        self.trade(symbol, "ORDER_TYPE_BUY", volume, stoploss, takeprofit, price, deviation)
+        price = 0
+        self.trade(symbol, "ORDER_TYPE_BUY", volume,
+                   stoploss, takeprofit, price, deviation)
 
     def sell(self, symbol, volume, stoploss, takeprofit, deviation=5):
-        price=0
-        self.trade(symbol, "ORDER_TYPE_SELL", volume, stoploss, takeprofit, price, deviation)
+        price = 0
+        self.trade(symbol, "ORDER_TYPE_SELL", volume,
+                   stoploss, takeprofit, price, deviation)
 
     def buyLimit(self, symbol, volume, stoploss, takeprofit, price=0, deviation=5):
-        self.trade(symbol, "ORDER_TYPE_BUY_LIMIT", volume, stoploss, takeprofit, price, deviation)
+        self.trade(symbol, "ORDER_TYPE_BUY_LIMIT", volume,
+                   stoploss, takeprofit, price, deviation)
 
     def sellLimit(self, symbol, volume, stoploss, takeprofit, price=0, deviation=5):
-        self.trade(symbol, "ORDER_TYPE_SELL_LIMIT", volume, stoploss, takeprofit, price, deviation)
+        self.trade(symbol, "ORDER_TYPE_SELL_LIMIT", volume,
+                   stoploss, takeprofit, price, deviation)
 
     def buyStop(self, symbol, volume, stoploss, takeprofit, price=0, deviation=5):
-        self.trade(symbol, "ORDER_TYPE_BUY_STOP", volume, stoploss, takeprofit, price, deviation)
+        self.trade(symbol, "ORDER_TYPE_BUY_STOP", volume,
+                   stoploss, takeprofit, price, deviation)
 
     def sellStop(self, symbol, volume, stoploss, takeprofit, price=0, deviation=5):
-        self.trade(symbol, "ORDER_TYPE_SELL_LIMIT", volume, stoploss, takeprofit, price, deviation)
+        self.trade(symbol, "ORDER_TYPE_SELL_LIMIT", volume,
+                   stoploss, takeprofit, price, deviation)
 
     def cancel_all(self):
         orders = self.orders()
@@ -260,7 +280,6 @@ class Metatrader:
         if 'positions' in positions:
             for position in positions['positions']:
                 self.CloseById(position['id'])
-
 
     def positionModify(self, id, stoploss, takeprofit):
         self.api.Command(
@@ -310,28 +329,87 @@ class Metatrader:
             id=id
         )
 
-    def accountInfo(self):
-        return json.loads(json.dumps(self.api.Command(action="ACCOUNT")))
+    def _utc_brocker_offset(self):
+        utc = datetime.now(self.utc_timezone).strftime('%Y-%m-%d %H:%M:%S')
+        try:
+            broker = self.accountInfo()
+            broker = datetime.strptime(broker['time'], '%Y.%m.%d %H:%M:%S')
+        except KeyError:
+            raise "Metatrader 5 Server is disconnect"
+        utc = datetime.strptime(utc, '%Y-%m-%d %H:%M:%S')
 
-    def positions(self):
-        return json.loads(json.dumps(self.api.Command(action="POSITIONS")))
+        duration = broker - utc
+        duration_in_s = duration.total_seconds()
+        hour = divmod(duration_in_s, 60)[0]
+        seconds = int(hour)*60
+        return seconds
 
-    def orders(self):
-        return json.loads(json.dumps(self.api.Command(action="ORDERS")))
+   
+    
 
-    def offset(self):
-        utc = datetime.now(tz).strftime('%Y-%m-%d %H:%M:%S')
-        accountInfo = self.api.Command(action="ACCOUNT")
-        date = accountInfo['time']
-        trade = datetime.strptime(date, '%Y.%m.%d %H:%M:%S')
-        zone = datetime.strptime(utc, '%Y-%m-%d %H:%M:%S')
-        duration =  trade - zone                  
-        duration_in_s = duration.total_seconds() 
-        hour = int(duration_in_s)
-        
-        return hour
 
-    def live(self,symbol, chartTF):
+    # convert datestamp to dia/mes/ano
+    def date_to_timestamp(self, s):
+        return time.mktime(datetime.strptime(s, "%d/%m/%Y").timetuple())
+
+    def date_to_timestamp_broker(self):
+        return time.mktime(datetime.strptime(self.accountInfo()['time'], '%Y.%m.%d %H:%M:%S').timetuple())
+
+
+    def datestring_to_date(self, s):
+
+        try:
+            # format example '18/09/2019'
+            datestring = datetime.strptime(s, "%d/%m/%Y %H:%M:%S").date()
+        except ValueError:
+            pass
+            try:
+                datestring = datetime.strptime(s, "%d/%m/%y %H:%M:%S").date()
+            except ValueError:
+                try:
+                    datestring = datetime.strptime(s, "%d/%m/%Y").date()
+                except ValueError:
+                    try:
+                        datestring = datetime.strptime(s, "%d/%m/%y").date()
+                    except ValueError:
+                        raise "date format must be dd/mm/yyyy"
+
+        return datestring
+
+    def datestring_to_datetime(self, s):
+        try:
+            # format example '18/09/2019'
+            datestring = datetime.strptime(s, "%d/%m/%Y %H:%M:%S")
+        except ValueError:
+            pass
+            try:
+                datestring = datetime.strptime(s, "%d/%m/%y %H:%M:%S")
+            except ValueError:
+                try:
+                    datestring = datetime.strptime(s, "%d/%m/%Y")
+                except ValueError:
+                    try:
+                        datestring = datetime.strptime(s, "%d/%m/%y")
+                    except ValueError:
+                        raise "date format must be DD/MM/YYYY HH:MM:SS"
+
+        return datestring
+
+    def datetimestring_to_time(self, s):
+        # format example '18/09/2019 01:55:19'
+        return datetime.strptime(s, "%d/%m/%Y %H:%M:%S").time()
+
+    # convert timestamp to hour minitus secods
+    def convertTimeStamp(self, seconds):
+        seconds = seconds % (24 * 3600)
+        hour = seconds // 3600
+        seconds %= 3600
+        minutes = seconds // 60
+        seconds %= 60
+
+        return "%d:%02d:%02d" % (hour, minutes, seconds)
+
+    def live(self, symbol, chartTF):
         self.api.Command(action="RESET")
         for active in symbol:
             self.api.Command(action="CONFIG",  symbol=active, chartTF=chartTF)
@@ -339,210 +417,104 @@ class Metatrader:
             time.sleep(1)
 
 
-    def Shorthistory(self, symbol, chartTF, fromDate):
-       
-        if(chartTF == 'TICK'):
-            data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * 60))))
-            self.api.Command(action="RESET")
-        else:
-            data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * (self.timeframe_to_sec(chartTF) * 60)))))
-            self.api.Command(action="RESET")
-        return data
-
-
-    def history(self, symbol, chartTF, fromDate, toDate):
-       
-        if(chartTF == 'TICK'):
-            data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
-            self.api.Command(action="RESET")
-        else:
-            data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
-            self.api.Command(action="RESET")
-        return data
-
-
-    def historyDataFrame(self, symbol, chartTF, fromDate, toDate, localTime=False):
-       
-        if(chartTF == 'TICK'):
-            data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
-            data_frame = pd.DataFrame(data['data'], columns=['date', 'bid', 'ask'])
-            data_frame = data_frame.set_index(['date'])
-            if localTime:
-                data_frame.index = pd.to_datetime(data_frame.index,unit='s')
-                data_frame.index = data_frame.index.tz_localize(self.utcoffset)
-                data_frame.index = data_frame.index.tz_convert(self.mytimezone)
-            self.api.Command(action="RESET")
-        else:
-            data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
-            data_frame = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','tick_volume','real_volume','spread'])
-            data_frame = data_frame.set_index(['date'])
-            if localTime:
-                data_frame.index = pd.to_datetime(data_frame.index,unit='s')
-                data_frame.index = data_frame.index.tz_localize(self.utcoffset)
-                data_frame.index = data_frame.index.tz_convert(self.mytimezone)
-            self.api.Command(action="RESET")
-        return data_frame
-
-
-
     def timeframe_to_sec(self, timeframe):
-            # Timeframe dictionary
-            TIMECANDLE = {
-                "S30": 30,
-                "M1": 60,
-                "M2": 120,
-                "M3": 180,
-                "M4": 240,
-                "M5": 300,
-                "M15": 900,
-                "M30": 1800,
-                "H1": 3600,
-                    
-            }
-            return TIMECANDLE[timeframe]  
+        # Timeframe dictionary
+        TIMECANDLE = {
+            "M1": 60,
+            "M2": 120,
+            "M3": 180,
+            "M4": 240,
+            "M5": 300,
+            "M15": 900,
+            "M30": 1800,
+            "H1": 3600,
+            "H4": 14400,
+            "D1": 86400,
+            "W1": 604800,
+            "MN": 2629746,
 
+        }
+        return TIMECANDLE[timeframe]
 
-    def ShorthistoryDataFrame(self, symbol, chartTF, fromDate, localTime=False):
+    def setlocaltime_dataframe(self, df):
+        df.index = df.index.tz_localize(self.utc_brocker_offset)
+        df.index = df.index.tz_convert(self.my_timezone)
+        df.index = df.index.tz_localize(None)
+        return df
+
+    def history(self, symbol, chartTF, fromDate=None, toDate=None):
+        actives = symbol
+        main = pd.DataFrame()
+        current = pd.DataFrame()
+        for active in actives:
+            # the first symbol on list is the main and the rest will merge
+            if active == symbol[0]:
+                # get data
+                if fromDate and toDate:
+                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                        fromDate=self.date_to_timestamp(fromDate), toDate=self.date_to_timestamp(toDate))
+                elif fromDate:
+                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                        fromDate=self.date_to_timestamp_broker() - (fromDate * self.timeframe_to_sec(chartTF) * 3),toDate=self.date_to_timestamp_broker())
+                else:
+                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                        fromDate=self.date_to_timestamp_broker() - (1000 * self.timeframe_to_sec(chartTF) * 3),toDate=self.date_to_timestamp_broker())
+
+                self.api.Command(action="RESET")
+                main = pd.DataFrame(data['data'])
+                main = main.set_index([0])
+                main.index.name = 'date'
+                main.index = pd.to_datetime(main.index, unit='s')
+
+                # TICK DATA
+                if(chartTF == 'TICK'):
+                    main.columns = ['bid', 'ask']
+                else:
+                    # OHLC DATA
+                    if self.real_volume:
+                        del main[5]
+                    else:
+                        del main[6]
+                    main.columns = ['open', 'high', 'low',
+                                    'close', 'volume', 'spread']
+
+            else:
+                # get data
+                if fromDate and toDate:
+                        data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                            fromDate=self.date_to_timestamp(fromDate), toDate=self.date_to_timestamp(toDate))
+                elif fromDate:
+                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                            fromDate=self.date_to_timestamp_broker() - (fromDate * self.timeframe_to_sec(chartTF) * 3),toDate=self.date_to_timestamp_broker())
+                else:
+                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                            fromDate=self.date_to_timestamp_broker() - (1000 * self.timeframe_to_sec(chartTF) * 3),toDate=self.date_to_timestamp_broker())
+
+                self.api.Command(action="RESET")
+                current = pd.DataFrame(data['data'])
+                current = current.set_index([0])
+                current.index.name = 'date'
+                current.index = pd.to_datetime(current.index, unit='s')
+                active = active.lower()
+                # TICK DATA
+                if(chartTF == 'TICK'):
+                    current.columns = [f'{active}_bid', f'{active}_ask']
+                else:
+                    # OHLC DATA
+                    if self.real_volume:
+                        del current[5]
+                    else:
+                        del current[6]
         
-        if(chartTF == 'TICK'):
-            data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * 60))))
-            data_frame = pd.DataFrame(data['data'], columns=['date', 'bid', 'ask'])
-            data_frame = data_frame.set_index(['date'])
-            if localTime:
-                data_frame.index = pd.to_datetime(data_frame.index,unit='s')
-                data_frame.index = data_frame.index.tz_localize(self.utcoffset)
-                data_frame.index = data_frame.index.tz_convert(self.mytimezone)
-            self.api.Command(action="RESET")
-        else:
-            data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=symbol, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * (self.timeframe_to_sec(chartTF) * 60)))))
-            data_frame = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','tick_volume','real_volume','spread'])
-            data_frame = data_frame.set_index(['date'])
-            if localTime:
-                data_frame.index = pd.to_datetime(data_frame.index,unit='s')
-                data_frame.index = data_frame.index.tz_localize(self.utcoffset)
-                data_frame.index = data_frame.index.tz_convert(self.mytimezone)
-            self.api.Command(action="RESET")
-        return data_frame
-   
+                    current.columns = [f'{active}_open', f'{active}_high',
+                                       f'{active}_low', f'{active}_close', f'{active}_volume', f'{active}_spread']
 
+                main = pd.merge(main, current, how='inner',
+                                left_index=True, right_index=True)
 
-    def historyMultiDataFrame(self, symbol, symbols, chartTF, fromDate, toDate, localTime=False):
-        actives = symbols
-        main = pd.DataFrame()
-        current = pd.DataFrame()
-
-        for active in actives:
-            if active == symbol:
-                if(chartTF == 'TICK'):
-                    data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
-                    main = pd.DataFrame(data['data'], columns=['date', 'bid', 'ask'])
-                    main = main.set_index(['date'])
-                    if localTime:
-                        main.index = pd.to_datetime(main.index,unit='s')
-                        main.index = main.index.tz_localize(self.utcoffset)
-                        main.index = main.index.tz_convert(self.mytimezone)
-                    self.api.Command(action="RESET")
-                else:
-                    data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
-                    main = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','tick_volume','real_volume','spread'])
-                    main = main.set_index(['date'])
-                    if localTime:
-                        main.index = pd.to_datetime(main.index,unit='s')
-                        main.index = main.index.tz_localize(self.utcoffset)
-                        main.index = main.index.tz_convert(self.mytimezone)
-                    self.api.Command(action="RESET")
-                
-            else:
-                if(chartTF == 'TICK'):
-                    data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
-                    current = pd.DataFrame(data['data'], columns=['date', 'bid', 'ask'])
-                    current = current.set_index(['date'])
-                    if localTime:
-                        current.index = pd.to_datetime(current.index,unit='s')
-                        current.index = current.index.tz_localize(self.utcoffset)
-                        current.index = current.index.tz_convert(self.mytimezone)
-                    current.columns = [f'BID{active}',f'ASK{active}']
-                    self.api.Command(action="RESET")
-                    main = pd.merge(main,current, how='inner', left_index=True, right_index=True)
-                else:
-                    data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=convertDate(fromDate), toDate=convertDate(toDate))))
-                    current = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','tick_volume','real_volume','spread'])
-                    current = current.set_index(['date'])
-                    if localTime:
-                        current.index = pd.to_datetime(current.index,unit='s')
-                        current.index = current.index.tz_localize(self.utcoffset)
-                        current.index = current.index.tz_convert(self.mytimezone)
-                    active = active.lower()
-                    current.columns = [f'open_{active}',f'high_{active}',f'low_{active}',f'close_{active}',f'tick_volume_{active}',f'real_volume_{active}',f'spread_{active}']
-                    self.api.Command(action="RESET")
-                    main = pd.merge(main,current, how='inner', left_index=True, right_index=True)
-        main = main.loc[~main.index.duplicated(keep = 'first')]
+        if self.localtime:
+            self.setlocaltime_dataframe(main)
+        main = main.loc[~main.index.duplicated(keep='first')]
         return main
-
-    def ShorthistoryMultiDataFrame(self, symbol, symbols, chartTF, fromDate, localTime=False):
-        actives = symbols
-        main = pd.DataFrame()
-        current = pd.DataFrame()
-
-        for active in actives:
-            if active == symbol:
-                if(chartTF == 'TICK'):
-                    data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * 60))))
-                    main = pd.DataFrame(data['data'], columns=['date', 'bid', 'ask'])
-                    main = main.set_index(['date'])
-                    if localTime:
-                        main.index = pd.to_datetime(main.index,unit='s')
-                        main.index = main.index.tz_localize(self.utcoffset)
-                        main.index = main.index.tz_convert(self.mytimezone)
-                    self.api.Command(action="RESET")
-                else:
-                    data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * (self.timeframe_to_sec(chartTF) * 60)))))
-                    main = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','tick_volume','real_volume','spread'])
-                    main = main.set_index(['date'])
-                    if localTime:
-                        main.index = pd.to_datetime(main.index,unit='s')
-                        main.index = main.index.tz_localize(self.utcoffset)
-                        main.index = main.index.tz_convert(self.mytimezone)
-                    self.api.Command(action="RESET")
-                
-            else:
-                if(chartTF == 'TICK'):
-                    data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * 60))))
-                    current = pd.DataFrame(data['data'], columns=['date', 'bid', 'ask'])
-                    current = current.set_index(['date'])
-                    if localTime:
-                        current.index = pd.to_datetime(current.index,unit='s')
-                        current.index = current.index.tz_localize(self.utcoffset)
-                        current.index = current.index.tz_convert(self.mytimezone)
-                    current.columns = [f'BID{active}',f'ASK{active}']
-                    self.api.Command(action="RESET")
-                    main = pd.merge(main,current, how='inner', left_index=True, right_index=True)
-                else:
-                    data = json.loads(json.dumps(self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF, fromDate=datetime.utcnow().timestamp() - (fromDate * (self.timeframe_to_sec(chartTF) * 60)))))
-                    current = pd.DataFrame(data['data'], columns=['date', 'open', 'high', 'low','close','tick_volume','real_volume','spread'])
-                    current = current.set_index(['date'])
-                    if localTime:
-                        current.index = pd.to_datetime(current.index,unit='s')
-                        current.index = current.index.tz_localize(self.utcoffset)
-                        current.index = current.index.tz_convert(self.mytimezone)
-                    active = active.lower()
-                    current.columns = [f'open_{active}',f'high_{active}',f'low_{active}',f'close_{active}',f'tick_volume_{active}',f'real_volume_{active}',f'spread_{active}']
-                    self.api.Command(action="RESET")
-                    main = pd.merge(main,current, how='inner', left_index=True, right_index=True)
-        main = main.loc[~main.index.duplicated(keep = 'first')]
-        return main
-
-
-    
-    
-
-  
-
- 
-         
-
-
-
-  
 
    
