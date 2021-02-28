@@ -165,6 +165,7 @@ api.close_all()
 #### History from Date to Date
 
 ```python
+# you can add unlimited actives to list  ["EURUSD","GBPUSD","AUDUSD"]
 symbol = ["EURUSD"]
 timeframe = "M1"
 fromDate = "20/02/2021"
@@ -193,7 +194,7 @@ date
 #### History by period unit like 27 candles
 
 ```python
-
+# you can add unlimited actives to list  ["EURUSD","GBPUSD","AUDUSD"]
 symbol = ["EURUSD"]
 timeframe = "M1"
 fromDate = 27
@@ -214,6 +215,27 @@ date
 2021-02-26 22:57:00  1.20730  1.20731  1.20716  1.20717    45.0      18
 2021-02-26 22:58:00  1.20716  1.20731  1.20694  1.20704    77.0      16
 2021-02-26 22:59:00  1.20702  1.20705  1.20702  1.20704    16.0      37
+```
+
+#### History for lastest period gread for predict
+
+```python
+# you can add unlimited actives to list  ["EURUSD","GBPUSD","AUDUSD"]
+symbol = ["EURUSD"]
+timeframe = "M1"
+fromDate = 27
+
+history = api.history(symbol,timeframe)
+print(history)
+
+                        open     high      low    close  volume  spread
+date
+2021-02-26 19:23:00  1.20846  1.20857  1.20837  1.20856    84.0       5
+2021-02-26 19:24:00  1.20855  1.20858  1.20842  1.20847    71.0       5
+2021-02-26 19:25:00  1.20846  1.20849  1.20832  1.20845    69.0       5
+2021-02-26 19:26:00  1.20844  1.20845  1.20823  1.20833    64.0       5
+2021-02-26 19:27:00  1.20833  1.20836  1.20821  1.20834    53.0       5
+
 ```
 
 #### History for multiple symbols merged dataframe
