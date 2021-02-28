@@ -18,8 +18,10 @@ https://github.com/traderpedroso/ejtraderMTServer
 ## Installation for Python API
 
 ```
+# for last stable use pip
 pip install ejtraderMT
 
+#for developers attention may contain countless bugs
 or
 git clone https://github.com/traderpedroso/ejtraderMT
 cd ejtraderMT
