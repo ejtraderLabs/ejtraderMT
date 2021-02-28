@@ -320,6 +320,13 @@ while True:
 
 ```
 
+# project reference thanks for
+
+Ding Li dingmaotu
+https://github.com/dingmaotu/mql-zmq
+Nikolai khramkov @khramkov
+https://github.com/khramkov/MQL5-JSON-API
+
 ### Future add comming soon
 
 ```
