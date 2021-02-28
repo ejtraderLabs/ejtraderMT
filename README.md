@@ -219,7 +219,7 @@ date
 # History for multiple symbols merged dataframe
 
 ```python
-# you cand add unlimited actives to list  ["EURUSD","GBPUSD","AUDUSD"]
+# you can add unlimited actives to list  ["EURUSD","GBPUSD","AUDUSD"]
 symbol = ["EURUSD","GBPUSD"]
 timeframe = "M1"
 fromDate = 27
