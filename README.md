@@ -21,8 +21,9 @@ https://github.com/traderpedroso/ejtraderMTServer
 # for last stable use pip
 pip install ejtraderMT
 
-#for developers attention may contain countless bugs
 or
+
+#for developers attention may contain countless bugs
 git clone https://github.com/traderpedroso/ejtraderMT
 cd ejtraderMT
 python setup.py install
