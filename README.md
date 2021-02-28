@@ -69,97 +69,6 @@ print(accountInfo['broker'])
 print(accountInfo['balance'])
 ```
 
-### You can create market or pending order with the commands.
-
-#### Market Orders
-
-```python
-# symbol, volume, stoploss, takeprofit, deviation
-api.buy("EURUSD", 0.01, 1.18, 1.19, 5)
-api.sell("EURUSD", 0.01, 1.18, 1.19, 5)
-```
-
-#### Limit Orders
-
-```python
-# symbol, volume, stoploss, takeprofit, price, deviation
-api.buyLimit("EURUSD", 0.01, 1.17, 1.19, 1.18, 5)
-api.sellLimit("EURUSD", 0.01, 1.20, 1.17, 1.19, 5)
-```
-
-#### Stop Orders
-
-```python
-#symbol, volume, stoploss, takeprofit, price, deviation
-api.buyStop("EURUSD", 0.01, 1.18, 1.20, 1.19, 5)
-api.sellStop("EURUSD", 0.01, 1.19, 1.17, 1.18, 5)
-```
-
-#### Positions & Manipulation
-
-```python
-positions = api.positions()
-
-
-if 'positions' in positions:
-    for position in positions['positions']:
-        api.CloseById(position['id'])
-
-
-```
-
-#### Orders & Manipulation
-
-```python
-orders = api.order()
-
-if 'orders' in orders:
-    for order in orders['orders']:
-        api.CancelById(order['id'])
-
-```
-
-#### Modify possition
-
-```python
-api.positionModify( id, stoploss, takeprofit)
-
-```
-
-#### Modify order
-
-```python
-api.orderModify( id, stoploss, takeprofit, price)
-
-```
-
-#### close by symbol
-
-```python
-api.CloseBySymbol("EURUSD")
-
-```
-
-#### close particial
-
-```python
-# id , volume
-api.ClosePartial( id, volume)
-
-```
-
-#### If you want to cancel all Orders
-
-```python
-api.cancel_all()
-```
-
-#### if you want to close all positions
-
-```python
-api.close_all()
-```
-
 # History Dataframe Ready
 
 #### History from Date to Date
@@ -312,11 +221,103 @@ t.start()
 t = Thread(target=event, daemon=True)
 t.start()
 
+```
+
+# Trading and Orders Manipulation
+
+### You can create market or pending order with the commands.
+
+#### Market Orders
+
+```python
+# symbol, volume, stoploss, takeprofit, deviation
+api.buy("EURUSD", 0.01, 1.18, 1.19, 5)
+api.sell("EURUSD", 0.01, 1.18, 1.19, 5)
+```
+
+#### Limit Orders
+
+```python
+# symbol, volume, stoploss, takeprofit, price, deviation
+api.buyLimit("EURUSD", 0.01, 1.17, 1.19, 1.18, 5)
+api.sellLimit("EURUSD", 0.01, 1.20, 1.17, 1.19, 5)
+```
+
+#### Stop Orders
+
+```python
+#symbol, volume, stoploss, takeprofit, price, deviation
+api.buyStop("EURUSD", 0.01, 1.18, 1.20, 1.19, 5)
+api.sellStop("EURUSD", 0.01, 1.19, 1.17, 1.18, 5)
+```
+
+#### Positions & Manipulation
+
+```python
+positions = api.positions()
 
 
+if 'positions' in positions:
+    for position in positions['positions']:
+        api.CloseById(position['id'])
+
+
+```
+
+#### Orders & Manipulation
+
+```python
+orders = api.order()
+
+if 'orders' in orders:
+    for order in orders['orders']:
+        api.CancelById(order['id'])
+
+```
+
+#### Modify possition
+
+```python
+api.positionModify( id, stoploss, takeprofit)
+
+```
+
+#### Modify order
+
+```python
+api.orderModify( id, stoploss, takeprofit, price)
+
+```
+
+#### close by symbol
+
+```python
+api.CloseBySymbol("EURUSD")
+
+```
+
+#### close particial
+
+```python
+# id , volume
+api.ClosePartial( id, volume)
+
+```
+
+#### If you want to cancel all Orders
+
+```python
+api.cancel_all()
+```
+
+#### if you want to close all positions
+
+```python
+api.close_all()
+```
 
 while True:
-    pass
+pass
 
 ```
 
@@ -329,6 +330,8 @@ Nikolai khramkov @khramkov
 https://github.com/khramkov/MQL5-JSON-API
 
 ### Future add comming soon
+
+```
 
 ```
 
