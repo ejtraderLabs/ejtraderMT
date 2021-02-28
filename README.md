@@ -335,8 +335,8 @@ https://github.com/khramkov/MQL5-JSON-API
 
 ### Future add comming soon
 
-#### source code for docker server comming soon
-
 ```
+source code for docker server comming soon
+persistent dataframe on SQLITE database for larger storege
 
 ```
