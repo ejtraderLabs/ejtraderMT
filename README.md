@@ -98,7 +98,7 @@ api.sellStop("EURUSD", 0.01, 1.19, 1.17, 1.18, 5)
 #### Positions & Manipulation
 
 ```python
-positions = api.positions
+positions = api.positions()
 
 
 if 'positions' in positions:
@@ -111,7 +111,7 @@ if 'positions' in positions:
 #### Orders & Manipulation
 
 ```python
-orders = api.order
+orders = api.order()
 
 if 'orders' in orders:
     for order in orders['orders']:
