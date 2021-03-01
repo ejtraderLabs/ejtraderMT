@@ -281,6 +281,7 @@ if 'orders' in orders:
 #### Modify possition
 
 ```python
+
 api.positionModify( id, stoploss, takeprofit)
 
 ```

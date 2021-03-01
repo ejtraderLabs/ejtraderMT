@@ -1,7 +1,7 @@
 import json
 import zmq
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 from pytz import timezone
 from tzlocal import get_localzone
@@ -219,7 +219,9 @@ class Metatrader:
         self.my_timezone = get_localzone()
         self.utc_brocker_offset = self._utc_brocker_offset()
        
- 
+    def balance(self):
+        return self.api.Command(action="BALANCE")
+
     def accountInfo(self):
         return self.api.Command(action="ACCOUNT")
 
@@ -351,53 +353,22 @@ class Metatrader:
     # convert datestamp to dia/mes/ano
     def date_to_timestamp(self, s):
         return time.mktime(datetime.strptime(s, "%d/%m/%Y").timetuple())
+    # convert datestamp to dia/mes/ano
+    def datetime_to_timestamp(self, s):
+        return time.mktime(s.timetuple())
 
     def date_to_timestamp_broker(self):
-        return time.mktime(datetime.strptime(self.accountInfo()['time'], '%Y.%m.%d %H:%M:%S').timetuple())
+        brokertime = time.mktime(datetime.strptime(self.accountInfo()['time'], '%Y.%m.%d %H:%M:%S').timetuple())
+        return round(brokertime)
 
+    def brokerTimeCalculation(self,s):
+        delta = timedelta(seconds = s)
+        broker = datetime.strptime(self.accountInfo()['time'], '%Y.%m.%d %H:%M:%S')
+        result = broker - delta
+        print(result)
+        return result
 
-    def datestring_to_date(self, s):
-
-        try:
-            # format example '18/09/2019'
-            datestring = datetime.strptime(s, "%d/%m/%Y %H:%M:%S").date()
-        except ValueError:
-            pass
-            try:
-                datestring = datetime.strptime(s, "%d/%m/%y %H:%M:%S").date()
-            except ValueError:
-                try:
-                    datestring = datetime.strptime(s, "%d/%m/%Y").date()
-                except ValueError:
-                    try:
-                        datestring = datetime.strptime(s, "%d/%m/%y").date()
-                    except ValueError:
-                        raise "date format must be dd/mm/yyyy"
-
-        return datestring
-
-    def datestring_to_datetime(self, s):
-        try:
-            # format example '18/09/2019'
-            datestring = datetime.strptime(s, "%d/%m/%Y %H:%M:%S")
-        except ValueError:
-            pass
-            try:
-                datestring = datetime.strptime(s, "%d/%m/%y %H:%M:%S")
-            except ValueError:
-                try:
-                    datestring = datetime.strptime(s, "%d/%m/%Y")
-                except ValueError:
-                    try:
-                        datestring = datetime.strptime(s, "%d/%m/%y")
-                    except ValueError:
-                        raise "date format must be DD/MM/YYYY HH:MM:SS"
-
-        return datestring
-
-    def datetimestring_to_time(self, s):
-        # format example '18/09/2019 01:55:19'
-        return datetime.strptime(s, "%d/%m/%Y %H:%M:%S").time()
+    
 
     # convert timestamp to hour minitus secods
     def convertTimeStamp(self, seconds):
@@ -453,67 +424,79 @@ class Metatrader:
                 if fromDate and toDate:
                     data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
                                         fromDate=self.date_to_timestamp(fromDate), toDate=self.date_to_timestamp(toDate))
-                elif fromDate:
+                elif isinstance(fromDate, int):
                     data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                        fromDate=self.date_to_timestamp_broker() - (fromDate * self.timeframe_to_sec(chartTF) * 3),toDate=self.date_to_timestamp_broker())
+                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + self.timeframe_to_sec(chartTF)) + fromDate * self.timeframe_to_sec(chartTF) - self.timeframe_to_sec(chartTF)) ))
+                elif isinstance(fromDate, str) and toDate==None:
+                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                        fromDate=self.date_to_timestamp(fromDate),toDate=self.date_to_timestamp_broker())
                 else:
                     data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                        fromDate=self.date_to_timestamp_broker() - (1000 * self.timeframe_to_sec(chartTF) * 3),toDate=self.date_to_timestamp_broker())
-
+                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + self.timeframe_to_sec(chartTF)) + 100 * self.timeframe_to_sec(chartTF) - self.timeframe_to_sec(chartTF)) ))
                 self.api.Command(action="RESET")
-                main = pd.DataFrame(data['data'])
-                main = main.set_index([0])
-                main.index.name = 'date'
-                main.index = pd.to_datetime(main.index, unit='s')
+                try:
+                    main = pd.DataFrame(data['data'])
+                    main = main.set_index([0])
+                    main.index.name = 'date'
+                    main.index = pd.to_datetime(main.index, unit='s')
 
-                # TICK DATA
-                if(chartTF == 'TICK'):
-                    main.columns = ['bid', 'ask']
-                else:
-                    # OHLC DATA
-                    if self.real_volume:
-                        del main[5]
+                    # TICK DATA
+                    if(chartTF == 'TICK'):
+                        main.columns = ['bid', 'ask']
                     else:
-                        del main[6]
-                    main.columns = ['open', 'high', 'low',
-                                    'close', 'volume', 'spread']
-
+                        # OHLC DATA
+                        if self.real_volume:
+                            del main[5]
+                        else:
+                            del main[6]
+                        main.columns = ['open', 'high', 'low',
+                                        'close', 'volume', 'spread']
+                except KeyError:
+                    pass
             else:
-                # get data
+                 # get data
                 if fromDate and toDate:
-                        data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                            fromDate=self.date_to_timestamp(fromDate), toDate=self.date_to_timestamp(toDate))
-                elif fromDate:
                     data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                            fromDate=self.date_to_timestamp_broker() - (fromDate * self.timeframe_to_sec(chartTF) * 3),toDate=self.date_to_timestamp_broker())
+                                        fromDate=self.date_to_timestamp(fromDate), toDate=self.date_to_timestamp(toDate))
+                elif isinstance(fromDate, int):
+                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + self.timeframe_to_sec(chartTF)) + fromDate * self.timeframe_to_sec(chartTF) - self.timeframe_to_sec(chartTF)) ))
+                elif isinstance(fromDate, str) and toDate==None:
+                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                        fromDate=self.date_to_timestamp(fromDate),toDate=self.date_to_timestamp_broker())
                 else:
                     data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                            fromDate=self.date_to_timestamp_broker() - (1000 * self.timeframe_to_sec(chartTF) * 3),toDate=self.date_to_timestamp_broker())
+                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + self.timeframe_to_sec(chartTF)) + 100 * self.timeframe_to_sec(chartTF) - self.timeframe_to_sec(chartTF)) ))
 
                 self.api.Command(action="RESET")
-                current = pd.DataFrame(data['data'])
-                current = current.set_index([0])
-                current.index.name = 'date'
-                current.index = pd.to_datetime(current.index, unit='s')
-                active = active.lower()
-                # TICK DATA
-                if(chartTF == 'TICK'):
-                    current.columns = [f'{active}_bid', f'{active}_ask']
-                else:
-                    # OHLC DATA
-                    if self.real_volume:
-                        del current[5]
+                try:
+                    current = pd.DataFrame(data['data'])
+                    current = current.set_index([0])
+                    current.index.name = 'date'
+                    current.index = pd.to_datetime(current.index, unit='s')
+                    active = active.lower()
+                    # TICK DATA
+                    if(chartTF == 'TICK'):
+                        current.columns = [f'{active}_bid', f'{active}_ask']
                     else:
-                        del current[6]
-        
-                    current.columns = [f'{active}_open', f'{active}_high',
-                                       f'{active}_low', f'{active}_close', f'{active}_volume', f'{active}_spread']
+                        # OHLC DATA
+                        if self.real_volume:
+                            del current[5]
+                        else:
+                            del current[6]
+            
+                        current.columns = [f'{active}_open', f'{active}_high',
+                                        f'{active}_low', f'{active}_close', f'{active}_volume', f'{active}_spread']
 
-                main = pd.merge(main, current, how='inner',
-                                left_index=True, right_index=True)
-
-        if self.localtime:
-            self.setlocaltime_dataframe(main)
+                    main = pd.merge(main, current, how='inner',
+                                    left_index=True, right_index=True)
+                except KeyError:
+                    pass
+        try:
+            if self.localtime:
+                self.setlocaltime_dataframe(main)
+        except AttributeError:
+            pass
         main = main.loc[~main.index.duplicated(keep='first')]
         return main
 
