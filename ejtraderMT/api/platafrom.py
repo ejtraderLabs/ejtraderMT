@@ -5,7 +5,8 @@ from datetime import datetime, timedelta
 import time
 from pytz import timezone
 from tzlocal import get_localzone
-
+import asyncio
+import uvloop
 
 class Functions:
     def __init__(self, host=None, debug=None):
@@ -208,10 +209,10 @@ class Functions:
 
 class Metatrader:
 
-    def __init__(self, host=None, real_volume=None, localtime=None):
+    def __init__(self, host=None, real_volume=None, localtime=True):
         self.api = Functions(host)
         self.real_volume = real_volume or False
-        self.localtime = localtime or False
+        self.localtime = localtime 
         self.utc_timezone = timezone('UTC')
 
         self.live_price = self.api.live_socket()
@@ -365,7 +366,6 @@ class Metatrader:
         delta = timedelta(seconds = s)
         broker = datetime.strptime(self.accountInfo()['time'], '%Y.%m.%d %H:%M:%S')
         result = broker - delta
-        print(result)
         return result
   
 
