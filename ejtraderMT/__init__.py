@@ -1,1 +1,1 @@
-from .api.platafrom import Metatrader
+from .api.mql import Metatrader
