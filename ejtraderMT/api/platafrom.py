@@ -5,8 +5,10 @@ from datetime import datetime, timedelta
 import time
 from pytz import timezone
 from tzlocal import get_localzone
-import asyncio
-import uvloop
+from threading import Thread
+from queue import Queue
+
+
 
 class Functions:
     def __init__(self, host=None, debug=None):
@@ -214,11 +216,15 @@ class Metatrader:
         self.real_volume = real_volume or False
         self.localtime = localtime 
         self.utc_timezone = timezone('UTC')
-
-        self.live_price = self.api.live_socket()
-        self.live_event = self.api.streaming_socket()
         self.my_timezone = get_localzone()
         self.utc_brocker_offset = self._utc_brocker_offset()
+        self._priceQ = Queue()
+        self._eventQ = Queue()
+        self._historyQ = Queue()
+       
+    
+       
+        
        
     def balance(self):
         return self.api.Command(action="BALANCE")
@@ -347,9 +353,100 @@ class Metatrader:
         seconds = int(hour)*60
         return seconds
 
-   
     
+    def _price(self):
+        connect = self.api.live_socket()
+        while True:
+            price = connect.recv_json()
+            try:
+                price = price['data']
+                price = pd.DataFrame([price]) 
+                price = price.set_index([0])
+                price.index.name = 'date'
+                if self.allchartTF == 'TICK':
+                    price.index = pd.to_datetime(price.index, unit='ms')
+                    price.columns = ['bid', 'ask']
+                    self._priceQ.put(price)
+                else:
+                    if self.real_volume:
+                        del price[5]
+                    else:
+                        del price[6]
+                    price.index = pd.to_datetime(price.index, unit='s')
+                    price.columns = ['open', 'high', 'low','close', 'volume','spread']
+                    
+                    self._priceQ.put(price)
+            except KeyError:
+                  pass
+            
+           
 
+    def _event(self):
+        connect = self.api.streaming_socket()
+        while True:
+            event = connect.recv_json()
+            try:
+                event = event['request']
+                event = pd.DataFrame(event, index=[0])
+                self._eventQ.put(event)
+            except KeyError:
+                pass
+
+    def price(self, symbol, chartTF):
+        self.api.Command(action="RESET")
+        self.allsymbol = symbol
+        self.allchartTF = chartTF
+        for active in symbol:
+            self.api.Command(action="CONFIG",  symbol=active, chartTF=chartTF)  
+        self.start_thread_price()
+        return  self._priceQ.get()
+       
+
+
+    def event(self, symbol, chartTF):
+        self.api.Command(action="RESET")
+        self.allsymbol = symbol
+        self.allchartTF = chartTF
+        for active in symbol:
+            self.api.Command(action="CONFIG",  symbol=active, chartTF=chartTF)          
+        self.start_thread_event()
+        return  self._eventQ.get()
+        
+
+        
+    
+    def start_thread_event(self):
+        try:
+            event = Thread(target=self._event, daemon=True)
+            event.start()
+        except:
+            print("Error: unable to start Event thread")
+      
+        
+    def start_thread_price(self):
+        try:
+            price = Thread(target=self._price, daemon=True)
+            price.start()
+        except:
+             print("Error: unable to start Price thread")
+        
+        
+        
+
+    def start_thread_history(self):
+        try:
+            history = Thread(target=self.historyThread, daemon=True)
+            history.start()
+        except:
+            print("Error: unable to start History thread")
+      
+
+   
+
+    
+       
+
+      
 
     # convert datestamp to dia/mes/ano
     def date_to_timestamp(self, s):
@@ -369,12 +466,7 @@ class Metatrader:
         return result
   
 
-    def live(self, symbol, chartTF):
-        self.api.Command(action="RESET")
-        for active in symbol:
-            self.api.Command(action="CONFIG",  symbol=active, chartTF=chartTF)
-            print(f'subscribed : {active}')
-            time.sleep(1)
+    
 
 
     def timeframe_to_sec(self, timeframe):
@@ -401,39 +493,59 @@ class Metatrader:
         df.index = df.index.tz_convert(self.my_timezone)
         df.index = df.index.tz_localize(None)
         return df
+   
 
-    def history(self, symbol, chartTF, fromDate=None, toDate=None):
-        actives = symbol
+
+    def history(self,symbol,chartTF,fromDate=None,toDate=None,threadON=False):
+        self.symbol = symbol
+        self.chartTF = chartTF
+        self.fromDate = fromDate
+        self.toDate = toDate
+        self.start_thread_history()
+        return self._historyQ.get()
+       
+
+
+    def historyThread(self):
+        actives = self.symbol
+        chartTF = self.chartTF
+        fromDate = self.fromDate
+        toDate  = self.toDate
         main = pd.DataFrame()
         current = pd.DataFrame()
+        if(chartTF == 'TICK'):
+            chartConvert = 60
+        else:
+            chartConvert = self.timeframe_to_sec(chartTF)
         for active in actives:
             # the first symbol on list is the main and the rest will merge
-            if active == symbol[0]:
+            if active == actives[0]:
                 # get data
                 if fromDate and toDate:
                     data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
                                         fromDate=self.date_to_timestamp(fromDate), toDate=self.date_to_timestamp(toDate))
                 elif isinstance(fromDate, int):
                     data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + self.timeframe_to_sec(chartTF)) + fromDate * self.timeframe_to_sec(chartTF) - self.timeframe_to_sec(chartTF)) ))
+                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
                 elif isinstance(fromDate, str) and toDate==None:
                     data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
                                         fromDate=self.date_to_timestamp(fromDate),toDate=self.date_to_timestamp_broker())
                 else:
                     data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + self.timeframe_to_sec(chartTF)) + 100 * self.timeframe_to_sec(chartTF) - self.timeframe_to_sec(chartTF)) ))
+                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
                 self.api.Command(action="RESET")
                 try:
                     main = pd.DataFrame(data['data'])
                     main = main.set_index([0])
                     main.index.name = 'date'
-                    main.index = pd.to_datetime(main.index, unit='s')
+                    
 
                     # TICK DATA
                     if(chartTF == 'TICK'):
                         main.columns = ['bid', 'ask']
+                        main.index = pd.to_datetime(main.index, unit='ms')
                     else:
-                        # OHLC DATA
+                        main.index = pd.to_datetime(main.index, unit='s')
                         if self.real_volume:
                             del main[5]
                         else:
@@ -449,26 +561,26 @@ class Metatrader:
                                         fromDate=self.date_to_timestamp(fromDate), toDate=self.date_to_timestamp(toDate))
                 elif isinstance(fromDate, int):
                     data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + self.timeframe_to_sec(chartTF)) + fromDate * self.timeframe_to_sec(chartTF) - self.timeframe_to_sec(chartTF)) ))
+                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
                 elif isinstance(fromDate, str) and toDate==None:
                     data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
                                         fromDate=self.date_to_timestamp(fromDate),toDate=self.date_to_timestamp_broker())
                 else:
                     data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + self.timeframe_to_sec(chartTF)) + 100 * self.timeframe_to_sec(chartTF) - self.timeframe_to_sec(chartTF)) ))
+                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
 
                 self.api.Command(action="RESET")
                 try:
                     current = pd.DataFrame(data['data'])
                     current = current.set_index([0])
                     current.index.name = 'date'
-                    current.index = pd.to_datetime(current.index, unit='s')
                     active = active.lower()
                     # TICK DATA
                     if(chartTF == 'TICK'):
+                        current.index = pd.to_datetime(current.index, unit='ms')
                         current.columns = [f'{active}_bid', f'{active}_ask']
                     else:
-                        # OHLC DATA
+                        current.index = pd.to_datetime(current.index, unit='s')
                         if self.real_volume:
                             del current[5]
                         else:
@@ -487,6 +599,12 @@ class Metatrader:
         except AttributeError:
             pass
         main = main.loc[~main.index.duplicated(keep='first')]
-        return main
+        self._historyQ.put(main)
 
+
+
+
+    
+
+    
    

@@ -1,4 +1,4 @@
-# Python Metatrader DataFrame API 2.0
+# Python Metatrader DataFrame API 2.0.3
 
 ## Instalation for docker Metatrader 5 Server API
 
@@ -180,13 +180,28 @@ date
 [3097 rows x 12 columns]
 ```
 
-# Live data and streaming events
+# Live streaming Price
 
 ```python
 from ejtraderMT import Metatrader
-from threading import Thread
+
+api = Metatrader()
+
+symbols = ["EURUSD","GBPUSD","AUDUSD"]
+timeframe = "TICK"
 
 
+# stream price
+while True:
+    price = api.price(symbols,timeframe)
+    print(price)
+
+```
+
+# Live streaming events
+
+```python
+from ejtraderMT import Metatrader
 
 
 api = Metatrader()
@@ -195,36 +210,11 @@ symbols = ["EURUSD","GBPUSD","AUDUSD"]
 timeframe = "TICK"
 
 
-# Live data stream subscribe
-api.live(symbols,timeframe)
-
-
-
-
-def price():
-    connect = api.live_price
-    while True:
-        price = connect.recv_json()
-        print(price)
-
-
-def event():
-    connect = api.live_event
-    while True:
-        event = connect.recv_json()
-        print(event)
-
-
-
-
-t = Thread(target=price, daemon=True)
-t.start()
-
-t = Thread(target=event, daemon=True)
-t.start()
-
+# stream event
 while True:
-    pass
+    event = api.event(symbols,timeframe)
+    print(event)
+
 ```
 
 # Trading and Orders Manipulation
