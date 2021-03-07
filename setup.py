@@ -17,9 +17,9 @@ def requirements(filename):
 
 setup(
     name='ejtraderMT',
-    version='2.0.3',
+    version='2.0.4',
     packages=find_packages(),
-    url='https://ejtrader_mt.readthedocs.io/',
+    url='https://ejtraderMT.readthedocs.io/',
     download_url='https://ejtrader.com',
     license='MIT License',
     author='Emerson Pedroso',
@@ -53,8 +53,8 @@ setup(
         'crypto currencies'
     ]),
     project_urls={
-        'Bug Reports': 'https://github.com/traderpedroso/ejtrader_mt/issues',
-        'Source': 'https://github.com/traderpedroso/ejtrader_mt',
+        'Bug Reports': 'https://github.com/traderpedroso/ejtraderMT/issues',
+        'Source': 'https://github.com/traderpedroso/ejtraderMT',
         'Documentation': 'https://ejtrader.readthedocs.io/'
     },
 )

@@ -1,15 +1,15 @@
 import json
 import zmq
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import time
 from pytz import timezone
 from tzlocal import get_localzone
-from threading import Thread
 from queue import Queue
-
-
-
+from ejtraderTH import start
+from ejtraderDB import DictSQLite
+from tqdm import tqdm
+import os
 class Functions:
     def __init__(self, host=None, debug=None):
         self.HOST = host or 'localhost'
@@ -398,7 +398,11 @@ class Metatrader:
         self.allchartTF = chartTF
         for active in symbol:
             self.api.Command(action="CONFIG",  symbol=active, chartTF=chartTF)  
-        self.start_thread_price()
+        try:
+            start(self._price, max_threads=20)
+        except:
+             print("Error: unable to start Price thread")
+      
         return  self._priceQ.get()
        
 
@@ -409,43 +413,16 @@ class Metatrader:
         self.allchartTF = chartTF
         for active in symbol:
             self.api.Command(action="CONFIG",  symbol=active, chartTF=chartTF)          
-        self.start_thread_event()
-        return  self._eventQ.get()
-        
-
-        
-    
-    def start_thread_event(self):
+       
         try:
-            event = Thread(target=self._event, daemon=True)
-            event.start()
+            start(self._event,max_threads=20)
         except:
             print("Error: unable to start Event thread")
       
+        return  self._eventQ.get()
         
-    def start_thread_price(self):
-        try:
-            price = Thread(target=self._price, daemon=True)
-            price.start()
-        except:
-             print("Error: unable to start Price thread")
-        
-        
-        
-
-    def start_thread_history(self):
-        try:
-            history = Thread(target=self.historyThread, daemon=True)
-            history.start()
-        except:
-            print("Error: unable to start History thread")
-      
-
-   
 
     
-       
-
       
 
     # convert datestamp to dia/mes/ano
@@ -496,13 +473,43 @@ class Metatrader:
    
 
 
-    def history(self,symbol,chartTF,fromDate=None,toDate=None,threadON=False):
-        self.symbol = symbol
+    def history(self,symbol,chartTF=None,fromDate=None,toDate=None,database=None):
         self.chartTF = chartTF
         self.fromDate = fromDate
         self.toDate = toDate
-        self.start_thread_history()
-        return self._historyQ.get()
+        if isinstance(symbol, tuple):
+            for symbols in symbol:
+                self.symbol = symbols
+        else:
+            self.symbol = symbol
+        if chartTF:
+            if database:
+                try:
+                    start(self.historyThread_save,repeat=1, max_threads=2000)
+                except:
+                    print("Error: unable to start History thread")
+            else:
+                try:
+                    start(self.historyThread, max_threads=20)
+                except:
+                    print("Error: unable to start History thread")
+                return self._historyQ.get()
+        else:
+            q = DictSQLite('history')
+            if isinstance(symbol, list):
+                try:
+                    df = q[f'{self.symbol[0]}']
+                except KeyError:
+                    df = f" {self.symbol[0]}  isn't on database"
+                    pass 
+            else:
+                try:
+                    df = q[f'{self.symbol}']
+                except KeyError:
+                    df = f" {self.symbol}  isn't on database"
+                    pass
+            return df
+    
        
 
 
@@ -600,6 +607,155 @@ class Metatrader:
             pass
         main = main.loc[~main.index.duplicated(keep='first')]
         self._historyQ.put(main)
+
+    def save_to_csv_first(self,df):
+        df.to_csv(f'DataBase/{self.active_file}.csv', header=True)
+
+    def save_to_csv_second(self,df):
+        df.to_csv(f'DataBase/{self.active_file}.csv',  mode='a', header=False)
+    
+
+    def historyThread_save(self,data):
+            actives = self.symbol
+            chartTF = self.chartTF
+            fromDate = self.fromDate
+            toDate  = self.toDate
+            main = pd.DataFrame()
+            current = pd.DataFrame()
+            header = True
+            self.count = 0
+            try:
+                os.makedirs('DataBase')
+            except OSError:
+                pass
+            # count data
+            start_date = datetime.strptime(fromDate, "%d/%m/%Y")
+
+            end_date = datetime.strptime(toDate, "%d/%m/%Y") or date.today() #date(2021, 1, 1)
+
+            delta = timedelta(days=1)
+            delta2 = timedelta(days=1)
+            diff_days = start_date - end_date
+            days_count = diff_days.days
+            pbar = tqdm(total=abs(days_count))
+            while start_date <= end_date:
+                pbar.update(delta.days)
+                fromDate = start_date.strftime("%d/%m/%Y")
+                toDate = start_date
+                toDate +=  delta2
+                toDate = toDate.strftime("%d/%m/%Y")  
+
+                if(chartTF == 'TICK'):
+                    chartConvert = 60
+                else:
+                    chartConvert = self.timeframe_to_sec(chartTF)
+                for active in actives:
+                    self.count += 1 
+                   
+                    # the first symbol on list is the main and the rest will merge
+                    if active == actives[0]:
+                        self.active_file = active
+                        # get data
+                        if fromDate and toDate:
+                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self.date_to_timestamp(fromDate), toDate=self.date_to_timestamp(toDate))
+                        elif isinstance(fromDate, int):
+                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
+                        elif isinstance(fromDate, str) and toDate==None:
+                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self.date_to_timestamp(fromDate),toDate=self.date_to_timestamp_broker())
+                        else:
+                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
+                        self.api.Command(action="RESET")
+                        try:
+                            main = pd.DataFrame(data['data'])
+                            main = main.set_index([0])
+                            main.index.name = 'date'
+                            
+
+                            # TICK DATA
+                            if(chartTF == 'TICK'):
+                                main.columns = ['bid', 'ask']
+                                main.index = pd.to_datetime(main.index, unit='ms')
+                            else:
+                                main.index = pd.to_datetime(main.index, unit='s')
+                                if self.real_volume:
+                                    del main[5]
+                                else:
+                                    del main[6]
+                                main.columns = ['open', 'high', 'low',
+                                                'close', 'volume', 'spread']
+                        except KeyError:
+                            pass
+                    else:
+                        # get data
+                        if fromDate and toDate:
+                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self.date_to_timestamp(fromDate), toDate=self.date_to_timestamp(toDate))
+                        elif isinstance(fromDate, int):
+                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
+                        elif isinstance(fromDate, str) and toDate==None:
+                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self.date_to_timestamp(fromDate),toDate=self.date_to_timestamp_broker())
+                        else:
+                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
+
+                        self.api.Command(action="RESET")
+                        try:
+                            current = pd.DataFrame(data['data'])
+                            current = current.set_index([0])
+                            current.index.name = 'date'
+                            active = active.lower()
+                            # TICK DATA
+                            if(chartTF == 'TICK'):
+                                current.index = pd.to_datetime(current.index, unit='ms')
+                                current.columns = [f'{active}_bid', f'{active}_ask']
+                            else:
+                                current.index = pd.to_datetime(current.index, unit='s')
+                                if self.real_volume:
+                                    del current[5]
+                                else:
+                                    del current[6]
+                    
+                                current.columns = [f'{active}_open', f'{active}_high',
+                                                f'{active}_low', f'{active}_close', f'{active}_volume', f'{active}_spread']
+
+                            main = pd.merge(main, current, how='inner',
+                                            left_index=True, right_index=True)
+                        except KeyError:
+                            pass
+                try:
+                    if self.localtime:
+                        self.setlocaltime_dataframe(main)
+                except AttributeError:
+                    pass
+                main = main.loc[~main.index.duplicated(keep='first')]
+                if self.count == 1:
+                    start(self.save_to_csv_first,data=[main],repeat=1, max_threads=20)
+                else:
+                    start(self.save_to_csv_second,data=[main],repeat=1, max_threads=20)
+             
+                start_date += delta
+            pbar.close()
+            start(self.save_to_db,repeat=1, max_threads=20)
+
+
+
+    def save_to_db(self,data):
+        q = DictSQLite('history')
+        df = pd.read_csv(f'DataBase/{self.active_file}.csv', low_memory=False)
+        q[f"{self.active_file}"] = df
+        # Get directory name
+        MODELFILE = f'DataBase/{self.active_file}.csv'
+        try:
+            os.remove(MODELFILE)
+        except OSError:
+            pass
+            
 
 
 

@@ -1,6 +1,6 @@
-# Python Metatrader DataFrame API 2.0.3
+# Python Metatrader DataFrame API 2.0.4
 
-## Instalation for docker Metatrader 5 Server API
+## Installation for docker Metatrader 5 Server API
 
 ###### first make sure you have docker installed on your pc
 
@@ -12,11 +12,24 @@ docker volume create ejtraderMT
 docker run -d --restart=always -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -p 15558:15558 --name ejtraderapi_server -v ejtraderMT:/data sostrader/ejtraderapi_server:stable
 ```
 
-or if you dont want to use docker you can download the expert and install on your Metatrader 5
+# Access Metatrader 5 via VNC
+
+download vnc viewer from url below or any other vnc client of your preference:
+
+https://www.realvnc.com/connect/download/viewer/
+
+```
+username: root
+password: root
+```
+
+# using API withou docker direct to Metrader 5
+
+if you dont want to use docker you can download the expert and install on your Metatrader 5
 simple download the folder MQL5 from the link below and install it on the Metatrader
 https://github.com/traderpedroso/ejtraderMTServer
 
-## Installation for Python API
+## Installation for Python API module
 
 ```
 # for last stable use pip
@@ -324,10 +337,69 @@ https://github.com/khramkov/MQL5-JSON-API
 
 ```
 
+# New funcion persistent history Data on SQLite Multithrering
+
+### for saving to database
+
+```python
+from ejtraderMT import Metatrader
+
+api = Metatrader()
+
+symbols = ["EURUSD"] # you can also use combind dataframe = ["EURUSD","GBPUSD","AUDUSD"]
+timeframe = "M1"
+# saving 20 years of OHLC
+fromDate = "01/01/2001"
+toDate = "01/01/2021"
+
+
+api.history(symbol,timeframe,fromDate,toDate,database=True)
+
+# or you could only pass from Date you want to start
+
+api.history(symbol,timeframe,fromDate,database=True)
+
+# example of saving 20 years of M1 OHLC takes around 3 minutes
+
+ 30%|█████████████████████████████████▋                              | 2174/7305 [01:10<02:28, 34.60it/s]
+```
+
+# Read from Database
+
+```python
+from ejtraderMT import Metatrader
+
+api = Metatrader()
+
+symbol = ["EURUSD"]
+
+
+
+data = api.history(simbol)
+
+# example reading 20 year of M1 OHLC takes around 2 seconds read more than 7 million canldes
+Elapsed run time: 2.041501855 seconds
+                        date     open     high      low    close  volume  spread
+0        2001-01-01 04:02:00  0.94220  0.94220  0.94220  0.94220     1.0      50
+1        2001-01-01 04:03:00  0.94240  0.94240  0.94240  0.94240     1.0      50
+2        2001-01-01 10:47:00  0.94250  0.94250  0.94250  0.94250     1.0      50
+3        2001-01-01 11:40:00  0.94190  0.94190  0.94190  0.94190     1.0      50
+4        2001-01-01 14:45:00  0.93970  0.93990  0.93970  0.93990     3.0      50
+...                      ...      ...      ...      ...      ...     ...     ...
+7286195  2020-12-31 17:56:00  1.22147  1.22152  1.22147  1.22152    20.0       8
+7286196  2020-12-31 17:57:00  1.22152  1.22162  1.22148  1.22157    58.0       8
+7286197  2020-12-31 17:58:00  1.22157  1.22167  1.22152  1.22166    77.0       9
+7286198  2020-12-31 17:59:00  1.22167  1.22177  1.22154  1.22154   129.0       8
+7286199  2020-12-31 18:00:00  1.22156  1.22156  1.22155  1.22155     2.0      11
+
+[7286200 rows x 7 columns]
+
+```
+
 ### Future add comming soon
 
 ```
 source code for docker server comming soon
-persistent dataframe on SQLITE database for larger storege
+
 
 ```
