@@ -33,7 +33,7 @@ https://github.com/traderpedroso/ejtraderMTServer
 
 ```
 # for last stable use pip
-pip install ejtraderMT
+pip install ejtraderMT -U
 
 or
 

@@ -608,11 +608,6 @@ class Metatrader:
         main = main.loc[~main.index.duplicated(keep='first')]
         self._historyQ.put(main)
 
-    def save_to_csv_first(self,df):
-        df.to_csv(f'DataBase/{self.active_file}.csv', header=True)
-
-    def save_to_csv_second(self,df):
-        df.to_csv(f'DataBase/{self.active_file}.csv',  mode='a', header=False)
     
 
     def historyThread_save(self,data):
@@ -622,7 +617,6 @@ class Metatrader:
             toDate  = self.toDate
             main = pd.DataFrame()
             current = pd.DataFrame()
-            header = True
             self.count = 0
             try:
                 os.makedirs('DataBase')
@@ -630,14 +624,17 @@ class Metatrader:
                 pass
             # count data
             start_date = datetime.strptime(fromDate, "%d/%m/%Y")
-
-            end_date = datetime.strptime(toDate, "%d/%m/%Y") or date.today() #date(2021, 1, 1)
+            if not toDate:
+                end_date = datetime.now() #date(2021, 1, 1)
+            else:
+                end_date = datetime.strptime(toDate, "%d/%m/%Y")
 
             delta = timedelta(days=1)
             delta2 = timedelta(days=1)
             diff_days = start_date - end_date
             days_count = diff_days.days
             pbar = tqdm(total=abs(days_count))
+            appended_data = []
             while start_date <= end_date:
                 pbar.update(delta.days)
                 fromDate = start_date.strftime("%d/%m/%Y")
@@ -734,27 +731,19 @@ class Metatrader:
                 except AttributeError:
                     pass
                 main = main.loc[~main.index.duplicated(keep='first')]
-                if self.count == 1:
-                    start(self.save_to_csv_first,data=[main],repeat=1, max_threads=20)
-                else:
-                    start(self.save_to_csv_second,data=[main],repeat=1, max_threads=20)
+                appended_data.append(main)
              
                 start_date += delta
             pbar.close()
-            start(self.save_to_db,repeat=1, max_threads=20)
+            df = pd.concat(appended_data)
+            start(self.save_to_db,data=[df],repeat=1, max_threads=20)
 
 
 
-    def save_to_db(self,data):
-        q = DictSQLite('history')
-        df = pd.read_csv(f'DataBase/{self.active_file}.csv', low_memory=False)
+    def save_to_db(self,df):
+        q = DictSQLite('history',multithreading=True)
         q[f"{self.active_file}"] = df
-        # Get directory name
-        MODELFILE = f'DataBase/{self.active_file}.csv'
-        try:
-            os.remove(MODELFILE)
-        except OSError:
-            pass
+        
             
 
 
