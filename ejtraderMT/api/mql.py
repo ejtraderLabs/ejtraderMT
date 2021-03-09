@@ -485,12 +485,12 @@ class Metatrader:
         if chartTF:
             if database:
                 try:
-                    start(self.historyThread_save,repeat=1, max_threads=2000)
+                    start(self.historyThread_save,repeat=1, max_threads=20)
                 except:
                     print("Error: unable to start History thread")
             else:
                 try:
-                    start(self.historyThread, max_threads=20)
+                    start(self.historyThread,repeat=1, max_threads=20)
                 except:
                     print("Error: unable to start History thread")
                 return self._historyQ.get()
@@ -513,7 +513,7 @@ class Metatrader:
        
 
 
-    def historyThread(self):
+    def historyThread(self,data):
         actives = self.symbol
         chartTF = self.chartTF
         fromDate = self.fromDate
