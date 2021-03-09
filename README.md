@@ -357,9 +357,15 @@ api.history(symbol,timeframe,fromDate,toDate,database=True)
 
 # or you could only pass from Date you want to start
 
-api.history(symbol,timeframe,fromDate,database=True)
 
-# example of saving 20 years of M1 OHLC takes around 3 minutes
+"""
+you can pull the history and save using only fromDate
+its will pull history fromDate till now
+
+api.history(symbol,timeframe,fromDate,database=True)
+"""
+
+# example of saving 20 years of M1 OHLC takes around 3 minutes on a 4 core CPU
 
  30%|█████████████████████████████████▋                              | 2174/7305 [01:10<02:28, 34.60it/s]
 ```
