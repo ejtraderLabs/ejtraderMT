@@ -375,7 +375,7 @@ symbol = ["EURUSD"]
 
 
 
-data = api.history(simbol)
+data = api.history(symbol)
 
 # example reading 20 year of M1 OHLC takes around 2 seconds read more than 7 million canldes
 Elapsed run time: 2.041501855 seconds
