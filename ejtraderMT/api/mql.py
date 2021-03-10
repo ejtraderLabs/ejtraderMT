@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, date
 from pytz import timezone
 from tzlocal import get_localzone
 from queue import Queue
+from threading import Thread
 import os
 import time
 
@@ -366,7 +367,7 @@ class Metatrader:
                 price = pd.DataFrame([price]) 
                 price = price.set_index([0])
                 price.index.name = 'date'
-                if self.allchartTF == 'TICK':
+                if self._allchartTF == 'TICK':
                     price.index = pd.to_datetime(price.index, unit='ms')
                     price.columns = ['bid', 'ask']
                     self._priceQ.put(price)
@@ -377,14 +378,26 @@ class Metatrader:
                         del price[6]
                     price.index = pd.to_datetime(price.index, unit='s')
                     price.columns = ['open', 'high', 'low','close', 'volume','spread']
-                    
                     self._priceQ.put(price)
+                    
+                
             except KeyError:
                   pass
-            
-           
+
+       
+
+    def _start_thread_price(self):
+        t = Thread(target=self._price,daemon=True)
+        t.start()
+
+    def _start_thread_event(self):
+        t = Thread(target=self._event,daemon=True)
+        t.start()
+
+    
 
     def _event(self):
+        q = DictSQLite('steam',multithreading=True)
         connect = self._api.streaming_socket()
         while True:
             event = connect.recv_json()
@@ -397,31 +410,25 @@ class Metatrader:
 
     def price(self, symbol, chartTF):
         self._api.Command(action="RESET")
-        self.allsymbol = symbol
-        self.allchartTF = chartTF
+        self._allsymbol_ = symbol
+        self._allchartTF = chartTF
         for active in symbol:
-            self._api.Command(action="CONFIG",  symbol=active, chartTF=chartTF)  
-        try:
-            start(self._price, max_threads=20)
-        except:
-             print("Error: unable to start Price thread")
-      
+            self._api.Command(action="CONFIG", symbol=active, chartTF=chartTF) 
+        self._start_thread_price()        
+        time.sleep(0.5)
         return  self._priceQ.get()
        
 
 
     def event(self, symbol, chartTF):
         self._api.Command(action="RESET")
-        self.allsymbol = symbol
-        self.allchartTF = chartTF
+        self._allsymbol_ = symbol
+        self._allchartTF = chartTF
         for active in symbol:
             self._api.Command(action="CONFIG",  symbol=active, chartTF=chartTF)          
-       
-        try:
-            start(self._event,max_threads=20)
-        except:
-            print("Error: unable to start Event thread")
-      
+        
+        self._start_thread_event()
+        time.sleep(0.5)
         return  self._eventQ.get()
         
 
@@ -482,9 +489,9 @@ class Metatrader:
         self.toDate = toDate
         if isinstance(symbol, tuple):
             for symbols in symbol:
-                self.symbol = symbols
+                self._symbol = symbols
         else:
-            self.symbol = symbol
+            self._symbol = symbol
         if chartTF:
             if database:
                 try:
@@ -501,15 +508,15 @@ class Metatrader:
             q = DictSQLite('history')
             if isinstance(symbol, list):
                 try:
-                    df = q[f'{self.symbol[0]}']
+                    df = q[f'{self._symbol[0]}']
                 except KeyError:
-                    df = f" {self.symbol[0]}  isn't on database"
+                    df = f" {self._symbol[0]}  isn't on database"
                     pass 
             else:
                 try:
-                    df = q[f'{self.symbol}']
+                    df = q[f'{self._symbol}']
                 except KeyError:
-                    df = f" {self.symbol}  isn't on database"
+                    df = f" {self._symbol}  isn't on database"
                     pass
             return df
     
@@ -517,7 +524,7 @@ class Metatrader:
 
 
     def _historyThread(self,data):
-        actives = self.symbol
+        actives = self._symbol
         chartTF = self.chartTF
         fromDate = self.fromDate
         toDate  = self.toDate
@@ -614,13 +621,13 @@ class Metatrader:
     
 
     def __historyThread_save(self,data):
-            actives = self.symbol
+            actives = self._symbol
             chartTF = self.chartTF
             fromDate = self.fromDate
             toDate  = self.toDate
             main = pd.DataFrame()
             current = pd.DataFrame()
-            self.count = 0
+            self._count = 0
             try:
                 os.makedirs('DataBase')
             except OSError:
@@ -650,11 +657,11 @@ class Metatrader:
                 else:
                     chartConvert = self._timeframe_to_sec(chartTF)
                 for active in actives:
-                    self.count += 1 
+                    self._count += 1 
                    
                     # the first symbol on list is the main and the rest will merge
                     if active == actives[0]:
-                        self.active_file = active
+                        self._active_file = active
                         # get data
                         if fromDate and toDate:
                             data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
@@ -739,13 +746,13 @@ class Metatrader:
                 start_date += delta
             pbar.close()
             df = pd.concat(appended_data)
-            start(self.save_to_db,data=[df],repeat=1, max_threads=20)
+            start(self._save_to_db,data=[df],repeat=1, max_threads=20)
 
 
 
-    def save_to_db(self,df):
+    def _save_to_db(self,df):
         q = DictSQLite('history',multithreading=True)
-        q[f"{self.active_file}"] = df
+        q[f"{self._active_file}"] = df
         
             
 
