@@ -1,15 +1,21 @@
-import json
-import zmq
-import pandas as pd
+
+
+
 from datetime import datetime, timedelta, date
-import time
 from pytz import timezone
 from tzlocal import get_localzone
 from queue import Queue
+import os
+import time
+
+import json
+import zmq
+
+import pandas as pd
 from ejtraderTH import start
 from ejtraderDB import DictSQLite
 from tqdm import tqdm
-import os
+
 class Functions:
     def __init__(self, host=None, debug=None):
         self.HOST = host or 'localhost'
