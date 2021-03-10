@@ -212,12 +212,12 @@ class Functions:
 class Metatrader:
 
     def __init__(self, host=None, real_volume=None, localtime=True):
-        self.api = Functions(host)
+        self._api = Functions(host)
         self.real_volume = real_volume or False
         self.localtime = localtime 
-        self.utc_timezone = timezone('UTC')
-        self.my_timezone = get_localzone()
-        self.utc_brocker_offset = self._utc_brocker_offset()
+        self._utc_timezone = timezone('UTC')
+        self._my_timezone = get_localzone()
+        self._utc_brocker_offset = self.__utc_brocker_offset()
         self._priceQ = Queue()
         self._eventQ = Queue()
         self._historyQ = Queue()
@@ -227,19 +227,19 @@ class Metatrader:
         
        
     def balance(self):
-        return self.api.Command(action="BALANCE")
+        return self._api.Command(action="BALANCE")
 
     def accountInfo(self):
-        return self.api.Command(action="ACCOUNT")
+        return self._api.Command(action="ACCOUNT")
 
     def positions(self):
-        return self.api.Command(action="POSITIONS")
+        return self._api.Command(action="POSITIONS")
 
     def orders(self):
-        return self.api.Command(action="ORDERS")
+        return self._api.Command(action="ORDERS")
 
     def trade(self, symbol, actionType, volume, stoploss, takeprofit, price, deviation):
-        self.api.Command(
+        self._api.Command(
             action="TRADE",
             actionType=actionType,
             symbol=symbol,
@@ -291,7 +291,7 @@ class Metatrader:
                 self.CloseById(position['id'])
 
     def positionModify(self, id, stoploss, takeprofit):
-        self.api.Command(
+        self._api.Command(
             action="TRADE",
             actionType="POSITION_MODIFY",
             id=id,
@@ -300,7 +300,7 @@ class Metatrader:
         )
 
     def ClosePartial(self, id, volume):
-        self.api.Command(
+        self._api.Command(
             action="TRADE",
             actionType="POSITION_PARTIAL",
             id=id,
@@ -308,21 +308,21 @@ class Metatrader:
         )
 
     def CloseById(self, id):
-        self.api.Command(
+        self._api.Command(
             action="TRADE",
             actionType="POSITION_CLOSE_ID",
             id=id
         )
 
     def CloseBySymbol(self, symbol):
-        self.api.Command(
+        self._api.Command(
             action="TRADE",
             actionType="POSITION_CLOSE_SYMBOL",
             symbol=symbol
         )
 
     def orderModify(self, id, stoploss, takeprofit, price):
-        self.api.Command(
+        self._api.Command(
             action="TRADE",
             actionType="ORDER_MODIFY",
             id=id,
@@ -332,14 +332,14 @@ class Metatrader:
         )
 
     def CancelById(self, id):
-        self.api.Command(
+        self._api.Command(
             action="TRADE",
             actionType="ORDER_CANCEL",
             id=id
         )
 
-    def _utc_brocker_offset(self):
-        utc = datetime.now(self.utc_timezone).strftime('%Y-%m-%d %H:%M:%S')
+    def __utc_brocker_offset(self):
+        utc = datetime.now(self._utc_timezone).strftime('%Y-%m-%d %H:%M:%S')
         try:
             broker = self.accountInfo()
             broker = datetime.strptime(broker['time'], '%Y.%m.%d %H:%M:%S')
@@ -355,7 +355,7 @@ class Metatrader:
 
     
     def _price(self):
-        connect = self.api.live_socket()
+        connect = self._api.live_socket()
         while True:
             price = connect.recv_json()
             try:
@@ -382,7 +382,7 @@ class Metatrader:
            
 
     def _event(self):
-        connect = self.api.streaming_socket()
+        connect = self._api.streaming_socket()
         while True:
             event = connect.recv_json()
             try:
@@ -393,11 +393,11 @@ class Metatrader:
                 pass
 
     def price(self, symbol, chartTF):
-        self.api.Command(action="RESET")
+        self._api.Command(action="RESET")
         self.allsymbol = symbol
         self.allchartTF = chartTF
         for active in symbol:
-            self.api.Command(action="CONFIG",  symbol=active, chartTF=chartTF)  
+            self._api.Command(action="CONFIG",  symbol=active, chartTF=chartTF)  
         try:
             start(self._price, max_threads=20)
         except:
@@ -408,11 +408,11 @@ class Metatrader:
 
 
     def event(self, symbol, chartTF):
-        self.api.Command(action="RESET")
+        self._api.Command(action="RESET")
         self.allsymbol = symbol
         self.allchartTF = chartTF
         for active in symbol:
-            self.api.Command(action="CONFIG",  symbol=active, chartTF=chartTF)          
+            self._api.Command(action="CONFIG",  symbol=active, chartTF=chartTF)          
        
         try:
             start(self._event,max_threads=20)
@@ -426,17 +426,17 @@ class Metatrader:
       
 
     # convert datestamp to dia/mes/ano
-    def date_to_timestamp(self, s):
+    def _date_to_timestamp(self, s):
         return time.mktime(datetime.strptime(s, "%d/%m/%Y").timetuple())
     # convert datestamp to dia/mes/ano
     def datetime_to_timestamp(self, s):
         return time.mktime(s.timetuple())
 
-    def date_to_timestamp_broker(self):
+    def _date_to_timestamp_broker(self):
         brokertime = time.mktime(datetime.strptime(self.accountInfo()['time'], '%Y.%m.%d %H:%M:%S').timetuple())
         return round(brokertime)
 
-    def brokerTimeCalculation(self,s):
+    def _brokerTimeCalculation(self,s):
         delta = timedelta(seconds = s)
         broker = datetime.strptime(self.accountInfo()['time'], '%Y.%m.%d %H:%M:%S')
         result = broker - delta
@@ -446,7 +446,7 @@ class Metatrader:
     
 
 
-    def timeframe_to_sec(self, timeframe):
+    def _timeframe_to_sec(self, timeframe):
         # Timeframe dictionary
         TIMECANDLE = {
             "M1": 60,
@@ -465,9 +465,9 @@ class Metatrader:
         }
         return TIMECANDLE[timeframe]
 
-    def setlocaltime_dataframe(self, df):
-        df.index = df.index.tz_localize(self.utc_brocker_offset)
-        df.index = df.index.tz_convert(self.my_timezone)
+    def _setlocaltime_dataframe(self, df):
+        df.index = df.index.tz_localize(self._utc_brocker_offset)
+        df.index = df.index.tz_convert(self._my_timezone)
         df.index = df.index.tz_localize(None)
         return df
    
@@ -485,12 +485,12 @@ class Metatrader:
         if chartTF:
             if database:
                 try:
-                    start(self.historyThread_save,repeat=1, max_threads=20)
+                    start(self.__historyThread_save,repeat=1, max_threads=20)
                 except:
                     print("Error: unable to start History thread")
             else:
                 try:
-                    start(self.historyThread,repeat=1, max_threads=20)
+                    start(self._historyThread,repeat=1, max_threads=20)
                 except:
                     print("Error: unable to start History thread")
                 return self._historyQ.get()
@@ -513,7 +513,7 @@ class Metatrader:
        
 
 
-    def historyThread(self,data):
+    def _historyThread(self,data):
         actives = self.symbol
         chartTF = self.chartTF
         fromDate = self.fromDate
@@ -523,24 +523,24 @@ class Metatrader:
         if(chartTF == 'TICK'):
             chartConvert = 60
         else:
-            chartConvert = self.timeframe_to_sec(chartTF)
+            chartConvert = self._timeframe_to_sec(chartTF)
         for active in actives:
             # the first symbol on list is the main and the rest will merge
             if active == actives[0]:
                 # get data
                 if fromDate and toDate:
-                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                        fromDate=self.date_to_timestamp(fromDate), toDate=self.date_to_timestamp(toDate))
+                    data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                        fromDate=self._date_to_timestamp(fromDate), toDate=self._date_to_timestamp(toDate))
                 elif isinstance(fromDate, int):
-                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
+                    data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                        fromDate=self.datetime_to_timestamp(self._brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
                 elif isinstance(fromDate, str) and toDate==None:
-                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                        fromDate=self.date_to_timestamp(fromDate),toDate=self.date_to_timestamp_broker())
+                    data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                        fromDate=self._date_to_timestamp(fromDate),toDate=self._date_to_timestamp_broker())
                 else:
-                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
-                self.api.Command(action="RESET")
+                    data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                        fromDate=self.datetime_to_timestamp(self._brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
+                self._api.Command(action="RESET")
                 try:
                     main = pd.DataFrame(data['data'])
                     main = main.set_index([0])
@@ -564,19 +564,19 @@ class Metatrader:
             else:
                  # get data
                 if fromDate and toDate:
-                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                        fromDate=self.date_to_timestamp(fromDate), toDate=self.date_to_timestamp(toDate))
+                    data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                        fromDate=self._date_to_timestamp(fromDate), toDate=self._date_to_timestamp(toDate))
                 elif isinstance(fromDate, int):
-                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
+                    data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                        fromDate=self.datetime_to_timestamp(self._brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
                 elif isinstance(fromDate, str) and toDate==None:
-                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                        fromDate=self.date_to_timestamp(fromDate),toDate=self.date_to_timestamp_broker())
+                    data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                        fromDate=self._date_to_timestamp(fromDate),toDate=self._date_to_timestamp_broker())
                 else:
-                    data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                        fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
+                    data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                        fromDate=self.datetime_to_timestamp(self._brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
 
-                self.api.Command(action="RESET")
+                self._api.Command(action="RESET")
                 try:
                     current = pd.DataFrame(data['data'])
                     current = current.set_index([0])
@@ -602,7 +602,7 @@ class Metatrader:
                     pass
         try:
             if self.localtime:
-                self.setlocaltime_dataframe(main)
+                self._setlocaltime_dataframe(main)
         except AttributeError:
             pass
         main = main.loc[~main.index.duplicated(keep='first')]
@@ -610,7 +610,7 @@ class Metatrader:
 
     
 
-    def historyThread_save(self,data):
+    def __historyThread_save(self,data):
             actives = self.symbol
             chartTF = self.chartTF
             fromDate = self.fromDate
@@ -645,7 +645,7 @@ class Metatrader:
                 if(chartTF == 'TICK'):
                     chartConvert = 60
                 else:
-                    chartConvert = self.timeframe_to_sec(chartTF)
+                    chartConvert = self._timeframe_to_sec(chartTF)
                 for active in actives:
                     self.count += 1 
                    
@@ -654,18 +654,18 @@ class Metatrader:
                         self.active_file = active
                         # get data
                         if fromDate and toDate:
-                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.date_to_timestamp(fromDate), toDate=self.date_to_timestamp(toDate))
+                            data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self._date_to_timestamp(fromDate), toDate=self._date_to_timestamp(toDate))
                         elif isinstance(fromDate, int):
-                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
+                            data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self.datetime_to_timestamp(self._brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
                         elif isinstance(fromDate, str) and toDate==None:
-                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.date_to_timestamp(fromDate),toDate=self.date_to_timestamp_broker())
+                            data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self._date_to_timestamp(fromDate),toDate=self._date_to_timestamp_broker())
                         else:
-                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
-                        self.api.Command(action="RESET")
+                            data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self.datetime_to_timestamp(self._brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
+                        self._api.Command(action="RESET")
                         try:
                             main = pd.DataFrame(data['data'])
                             main = main.set_index([0])
@@ -689,19 +689,19 @@ class Metatrader:
                     else:
                         # get data
                         if fromDate and toDate:
-                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.date_to_timestamp(fromDate), toDate=self.date_to_timestamp(toDate))
+                            data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self._date_to_timestamp(fromDate), toDate=self._date_to_timestamp(toDate))
                         elif isinstance(fromDate, int):
-                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
+                            data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self.datetime_to_timestamp(self._brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
                         elif isinstance(fromDate, str) and toDate==None:
-                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.date_to_timestamp(fromDate),toDate=self.date_to_timestamp_broker())
+                            data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self._date_to_timestamp(fromDate),toDate=self._date_to_timestamp_broker())
                         else:
-                            data = self.api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.datetime_to_timestamp(self.brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
+                            data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
+                                                fromDate=self.datetime_to_timestamp(self._brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
 
-                        self.api.Command(action="RESET")
+                        self._api.Command(action="RESET")
                         try:
                             current = pd.DataFrame(data['data'])
                             current = current.set_index([0])
@@ -727,7 +727,7 @@ class Metatrader:
                             pass
                 try:
                     if self.localtime:
-                        self.setlocaltime_dataframe(main)
+                        self._setlocaltime_dataframe(main)
                 except AttributeError:
                     pass
                 main = main.loc[~main.index.duplicated(keep='first')]
