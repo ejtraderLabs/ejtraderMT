@@ -61,6 +61,16 @@ class Functions:
 
         except zmq.ZMQError:
             raise zmq.ZMQBindError("Binding ports ERROR")
+        except KeyboardInterrupt:
+            self.sys_socket.close()
+            self.sys_socket.term()
+            self.data_socket.close()
+            self.data_socket.term()
+            self.indicator_data_socket.close()
+            self.indicator_data_socket.term()
+            self.chart_data_socket.close()
+            self.chart_data_socket.term()
+            pass
 
     def _send_request(self, data: dict) -> None:
         """Send request to server via ZeroMQ System socket"""
@@ -73,6 +83,8 @@ class Functions:
             raise zmq.NotDone(err)
         except zmq.ZMQError:
             raise zmq.NotDone("Sending request ERROR")
+
+        
 
     def _pull_reply(self):
         """Get reply from server via Data socket with timeout"""
@@ -222,9 +234,7 @@ class Metatrader:
         self._utc_timezone = timezone('UTC')
         self._my_timezone = get_localzone()
         self._utc_brocker_offset = self.__utc_brocker_offset()
-        self._priceQ = Queue()
-        self._eventQ = Queue()
-        self._historyQ = Queue()
+        
        
     
        
@@ -389,15 +399,17 @@ class Metatrader:
     def _start_thread_price(self):
         t = Thread(target=self._price,daemon=True)
         t.start()
+        self._priceQ = Queue()
 
     def _start_thread_event(self):
         t = Thread(target=self._event,daemon=True)
         t.start()
+        self._eventQ = Queue()
+        
 
     
 
     def _event(self):
-        q = DictSQLite('steam',multithreading=True)
         connect = self._api.streaming_socket()
         while True:
             event = connect.recv_json()
@@ -487,6 +499,7 @@ class Metatrader:
         self.chartTF = chartTF
         self.fromDate = fromDate
         self.toDate = toDate
+        self._historyQ = Queue()
         if isinstance(symbol, tuple):
             for symbols in symbol:
                 self._symbol = symbols
