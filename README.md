@@ -9,7 +9,8 @@
 ```
 
 docker volume create ejtraderMT
-docker run -d --restart=always -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -p 15558:15558 --name ejtraderapi_server -v ejtraderMT:/data sostrader/ejtraderapi_server:stable
+docker run -d --restart=always -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -p 15558:15558 --name ejtraderapi_server -v ejtraderMT:/data sostrader/ejtradermt_server:stable
+
 ```
 
 # Access Metatrader 5 via VNC
