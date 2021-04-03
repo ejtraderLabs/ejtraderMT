@@ -377,10 +377,14 @@ class Metatrader:
                 price = pd.DataFrame([price]) 
                 price = price.set_index([0])
                 price.index.name = 'date'
-                if self._allchartTF == 'TICK':
+                if self._allchartTF == 'TS':
                     price.index = pd.to_datetime(price.index, unit='ms')
                     price.columns = ['bid', 'ask']
                     self._priceQ.put(price)
+                elif self._allchartTF == 'TICK':
+                    price.index = pd.to_datetime(price.index, unit='ms')
+                    price.columns = ['type','bid', 'ask','last','volume']
+                    self._priceQ.put(price) 
                 else:
                     if self.real_volume:
                         del price[5]
@@ -495,11 +499,12 @@ class Metatrader:
    
 
 
-    def history(self,symbol,chartTF=None,fromDate=None,toDate=None,database=None):
+    def history(self,symbol,chartTF=None,fromDate=None,toDate=None,database=None,dataframe=True):
         self.chartTF = chartTF
         self.fromDate = fromDate
         self.toDate = toDate
         self._historyQ = Queue()
+        self.dataframe = dataframe
         if isinstance(symbol, tuple):
             for symbols in symbol:
                 self._symbol = symbols
@@ -533,7 +538,7 @@ class Metatrader:
                     pass
             return df
     
-       
+    
 
 
     def _historyThread(self,data):
@@ -564,26 +569,27 @@ class Metatrader:
                     data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
                                         fromDate=self.datetime_to_timestamp(self._brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
                 self._api.Command(action="RESET")
-                try:
-                    main = pd.DataFrame(data['data'])
-                    main = main.set_index([0])
-                    main.index.name = 'date'
-                    
+                if self.dataframe:
+                    try:
+                        main = pd.DataFrame(data['data'])
+                        main = main.set_index([0])
+                        main.index.name = 'date'
+                        
 
-                    # TICK DATA
-                    if(chartTF == 'TICK'):
-                        main.columns = ['bid', 'ask']
-                        main.index = pd.to_datetime(main.index, unit='ms')
-                    else:
-                        main.index = pd.to_datetime(main.index, unit='s')
-                        if self.real_volume:
-                            del main[5]
+                        # TICK DATA
+                        if(chartTF == 'TICK'):
+                            main.columns = ['bid', 'ask']
+                            main.index = pd.to_datetime(main.index, unit='ms')
                         else:
-                            del main[6]
-                        main.columns = ['open', 'high', 'low',
-                                        'close', 'volume', 'spread']
-                except KeyError:
-                    pass
+                            main.index = pd.to_datetime(main.index, unit='s')
+                            if self.real_volume:
+                                del main[5]
+                            else:
+                                del main[6]
+                            main.columns = ['open', 'high', 'low',
+                                            'close', 'volume', 'spread']
+                    except KeyError:
+                        pass
             else:
                  # get data
                 if fromDate and toDate:
@@ -600,35 +606,39 @@ class Metatrader:
                                         fromDate=self.datetime_to_timestamp(self._brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
 
                 self._api.Command(action="RESET")
-                try:
-                    current = pd.DataFrame(data['data'])
-                    current = current.set_index([0])
-                    current.index.name = 'date'
-                    active = active.lower()
-                    # TICK DATA
-                    if(chartTF == 'TICK'):
-                        current.index = pd.to_datetime(current.index, unit='ms')
-                        current.columns = [f'{active}_bid', f'{active}_ask']
-                    else:
-                        current.index = pd.to_datetime(current.index, unit='s')
-                        if self.real_volume:
-                            del current[5]
+                if self.dataframe:
+                    try:
+                        current = pd.DataFrame(data['data'])
+                        current = current.set_index([0])
+                        current.index.name = 'date'
+                        active = active.lower()
+                        # TICK DATA
+                        if(chartTF == 'TICK'):
+                            current.index = pd.to_datetime(current.index, unit='ms')
+                            current.columns = [f'{active}_bid', f'{active}_ask']
                         else:
-                            del current[6]
-            
-                        current.columns = [f'{active}_open', f'{active}_high',
-                                        f'{active}_low', f'{active}_close', f'{active}_volume', f'{active}_spread']
+                            current.index = pd.to_datetime(current.index, unit='s')
+                            if self.real_volume:
+                                del current[5]
+                            else:
+                                del current[6]
+                
+                            current.columns = [f'{active}_open', f'{active}_high',
+                                            f'{active}_low', f'{active}_close', f'{active}_volume', f'{active}_spread']
 
-                    main = pd.merge(main, current, how='inner',
-                                    left_index=True, right_index=True)
-                except KeyError:
-                    pass
-        try:
-            if self.localtime:
-                self._setlocaltime_dataframe(main)
-        except AttributeError:
-            pass
-        main = main.loc[~main.index.duplicated(keep='first')]
+                        main = pd.merge(main, current, how='inner',
+                                        left_index=True, right_index=True)
+                    except KeyError:
+                        pass
+        if self.dataframe:
+            try:
+                if self.localtime:
+                    self._setlocaltime_dataframe(main)
+            except AttributeError:
+                pass
+            main = main.loc[~main.index.duplicated(keep='first')]
+        else:
+            main = data
         self._historyQ.put(main)
 
     
