@@ -246,7 +246,7 @@ class Metatrader:
             self.dbname = dbname or 'ejtraderMT'
             self.protocol = 'line'
             self.client = DataFrameClient(self.dbhost, self.dbport, self.dbuser, self.dbpass, self.dbname)
-            
+            self.client.create_database(self.dbname)
          
     def balance(self):
         return self._api.Command(action="BALANCE")
@@ -538,6 +538,9 @@ class Metatrader:
                         df = q[f'{self._symbol[0]}']
                     else:
                         df = self.client.query(f"select * from {self._symbol[0]}")
+                        df = df[self._symbol[0]]
+                        df.index = df.index.tz_localize(None)
+                        df.index.name = 'date'
                 except KeyError:
                     df = f" {self._symbol[0]}  isn't on database"
                     pass 
@@ -547,6 +550,9 @@ class Metatrader:
                         df = q[f'{self._symbol}']
                     else:
                         df = self.client.query(f"select * from {self._symbol}")
+                        df = df[self._symbol]
+                        df.index = df.index.tz_localize(None)
+                        df.index.name = 'date'
                 except KeyError:
                     df = f" {self._symbol}  isn't on database"
                     pass
@@ -772,11 +778,7 @@ class Metatrader:
                                             left_index=True, right_index=True)
                         except KeyError:
                             pass
-                try:
-                    if self.localtime:
-                        self._setlocaltime_dataframe(main)
-                except AttributeError:
-                    pass
+                
                 main = main.loc[~main.index.duplicated(keep='first')]
                 appended_data.append(main)
              
@@ -790,10 +792,23 @@ class Metatrader:
     def _save_to_db(self,df):
         if self.dbtype == 'SQLITE':
             q = DictSQLite('history',multithreading=True)
+            try:
+                if self.localtime:
+                    self._setlocaltime_dataframe(df)
+                    
+            except AttributeError:
+                pass
+        
             q[f"{self._active_name}"] = df
         else:
-            self.client.create_database(self.dbname)
-            self.client.write_points(df, f"{self._active_name}", protocol=self.protocol)
+            try:
+                if self.localtime:
+                    self._setlocaltime_dataframe(df)
+                   
+            except AttributeError:
+                pass
+        
+        self.client.write_points(df, f"{self._active_name}", protocol=self.protocol)
 
 
 
