@@ -799,7 +799,7 @@ class Metatrader:
             except AttributeError:
                 pass
         
-            q[f"{self._active_name}"] = df
+        q[f"{self._active_name}"] = df
         else:
             try:
                 if self.localtime:

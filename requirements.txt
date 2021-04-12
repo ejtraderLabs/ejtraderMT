@@ -4,6 +4,7 @@ tzlocal==2.1
 ejtraderTH==1.0.3
 ejtraderDB==1.0.2
 tqdm==4.56.0
+influxdb==5.3.1
 
 
 
