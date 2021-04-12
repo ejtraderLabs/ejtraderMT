@@ -12,6 +12,7 @@ import zmq
 import pandas as pd
 from ejtraderTH import start
 from ejtraderDB import DictSQLite
+from influxdb import DataFrameClient
 from tqdm import tqdm
 
 class Functions:
@@ -227,19 +228,24 @@ class Functions:
 
 class Metatrader:
 
-    def __init__(self, host=None, real_volume=None, localtime=True):
+    def __init__(self, host=None, real_volume=None, localtime=True, dbtype=None,dbhost=None,dbport=None,dbpass=None,dbuser=None,dbname=None):
         self._api = Functions(host)
         self.real_volume = real_volume or False
         self.localtime = localtime 
         self._utc_timezone = timezone('UTC')
         self._my_timezone = get_localzone()
         self._utc_brocker_offset = self.__utc_brocker_offset()
+        # db settings
+        self.dbtype = dbtype or 'SQLITE' # SQLITE OR INFLUXDB
+
+        # if dbtype is influxdb
+        self.dbhost = dbhost or 'localhost'
+        self.dbport = dbport or '8086'
+        self.dbuser = dbuser or 'root'
+        self.dbpass = dbpass or 'root'
+        self.dbname = dbname or 'ejtraderMT'
         
-       
-    
-       
-        
-       
+         
     def balance(self):
         return self._api.Command(action="BALANCE")
 
@@ -526,13 +532,19 @@ class Metatrader:
             q = DictSQLite('history')
             if isinstance(symbol, list):
                 try:
-                    df = q[f'{self._symbol[0]}']
+                    if self.dbtype == 'SQLITE':
+                        df = q[f'{self._symbol[0]}']
+                    else:
+                        df = client.query(f"select * from {self._symbol[0]}")
                 except KeyError:
                     df = f" {self._symbol[0]}  isn't on database"
                     pass 
             else:
                 try:
-                    df = q[f'{self._symbol}']
+                    if self.dbtype == 'SQLITE':
+                        df = q[f'{self._symbol}']
+                    else:
+                        df = client.query(f"select * from {self._symbol}")
                 except KeyError:
                     df = f" {self._symbol}  isn't on database"
                     pass
@@ -684,7 +696,7 @@ class Metatrader:
                    
                     # the first symbol on list is the main and the rest will merge
                     if active == actives[0]:
-                        self._active_file = active
+                        self._active_name = active
                         # get data
                         if fromDate and toDate:
                             data = self._api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
@@ -774,10 +786,13 @@ class Metatrader:
 
 
     def _save_to_db(self,df):
-        q = DictSQLite('history',multithreading=True)
-        q[f"{self._active_file}"] = df
-        
-            
+        if self.dbtype == 'SQLITE':
+            q = DictSQLite('history',multithreading=True)
+            q[f"{self._active_name}"] = df
+        else:
+            client = DataFrameClient(self.dbhost, self.dbport, self.dbuser, self.dbpass, self.dbname)
+            client.create_database(self.dbname)
+            client.write_points(df, f"{self._active_name}", protocol=protocol)
 
 
 
