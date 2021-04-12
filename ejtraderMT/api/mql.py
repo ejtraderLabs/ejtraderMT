@@ -237,14 +237,16 @@ class Metatrader:
         self._utc_brocker_offset = self.__utc_brocker_offset()
         # db settings
         self.dbtype = dbtype or 'SQLITE' # SQLITE OR INFLUXDB
-
-        # if dbtype is influxdb
-        self.dbhost = dbhost or 'localhost'
-        self.dbport = dbport or '8086'
-        self.dbuser = dbuser or 'root'
-        self.dbpass = dbpass or 'root'
-        self.dbname = dbname or 'ejtraderMT'
-        
+        if dbtype == "INFLUXDB":
+            # if dbtype is influxdb
+            self.dbhost = dbhost or 'localhost'
+            self.dbport = dbport or '8086'
+            self.dbuser = dbuser or 'root'
+            self.dbpass = dbpass or 'root'
+            self.dbname = dbname or 'ejtraderMT'
+            self.protocol = 'line'
+            self.client = DataFrameClient(self.dbhost, self.dbport, self.dbuser, self.dbpass, self.dbname)
+            
          
     def balance(self):
         return self._api.Command(action="BALANCE")
@@ -535,7 +537,7 @@ class Metatrader:
                     if self.dbtype == 'SQLITE':
                         df = q[f'{self._symbol[0]}']
                     else:
-                        df = client.query(f"select * from {self._symbol[0]}")
+                        df = self.client.query(f"select * from {self._symbol[0]}")
                 except KeyError:
                     df = f" {self._symbol[0]}  isn't on database"
                     pass 
@@ -544,7 +546,7 @@ class Metatrader:
                     if self.dbtype == 'SQLITE':
                         df = q[f'{self._symbol}']
                     else:
-                        df = client.query(f"select * from {self._symbol}")
+                        df = self.client.query(f"select * from {self._symbol}")
                 except KeyError:
                     df = f" {self._symbol}  isn't on database"
                     pass
@@ -790,9 +792,8 @@ class Metatrader:
             q = DictSQLite('history',multithreading=True)
             q[f"{self._active_name}"] = df
         else:
-            client = DataFrameClient(self.dbhost, self.dbport, self.dbuser, self.dbpass, self.dbname)
-            client.create_database(self.dbname)
-            client.write_points(df, f"{self._active_name}", protocol=protocol)
+            self.client.create_database(self.dbname)
+            self.client.write_points(df, f"{self._active_name}", protocol=self.protocol)
 
 
 
