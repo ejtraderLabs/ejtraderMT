@@ -9,7 +9,7 @@
 ```
 
 docker volume create ejtraderMT
-docker run -d --restart=always -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -p 15558:15558 --name ejtraderapi_server -v ejtraderMT:/data sostrader/ejtradermt_server:stable
+docker run -d --restart=always -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -p 15558:15558 --name ejtraderMT -v ejtraderMT:/data ejtrader/metatrader:5
 
 ```
 
@@ -29,6 +29,10 @@ password: root
 if you dont want to use docker you can download the expert and install on your Metatrader 5
 simple download the folder MQL5 from the link below and install it on the Metatrader
 https://github.com/traderpedroso/ejtraderMTServer
+
+# Dockerfile and source for wine vnc 
+https://github.com/ejtraderLabs/ejtraderMT-Docker
+
 
 ## Installation for Python API module
 
@@ -406,7 +410,9 @@ Elapsed run time: 2.041501855 seconds
 ### Future add comming soon
 
 ```
-source code for docker server comming soon
+economic calendar
+level 1 for futures only
+level 2 for futures only
 
 
 ```
