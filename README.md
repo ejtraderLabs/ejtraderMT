@@ -1,4 +1,4 @@
-# Python Metatrader DataFrame API 3.0.3
+# Python Metatrader DataFrame API 3.0.4
 
 ## Installation for docker Metatrader 5 Server API
 
