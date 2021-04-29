@@ -385,11 +385,11 @@ class Metatrader:
                 price = pd.DataFrame([price]) 
                 price = price.set_index([0])
                 price.index.name = 'date'
-                if self._allchartTF == 'TS':
+                if self._allchartTF == 'TICK':
                     price.index = pd.to_datetime(price.index, unit='ms')
                     price.columns = ['bid', 'ask']
                     self.__priceQ.put(price)
-                elif self._allchartTF == 'TICK':
+                elif self._allchartTF == 'TS':
                     price.index = pd.to_datetime(price.index, unit='ms')
                     price.columns = ['type','bid', 'ask','last','volume']
                     self.__priceQ.put(price) 
