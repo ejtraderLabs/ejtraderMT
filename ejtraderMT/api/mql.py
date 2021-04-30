@@ -228,10 +228,10 @@ class Functions:
 
 class Metatrader:
 
-    def __init__(self, host=None, real_volume=None, localtime=True, dbtype=None,dbhost=None,dbport=None,dbpass=None,dbuser=None,dbname=None):
+    def __init__(self, host=None, real_volume=None, tz_local=True, dbtype=None,dbhost=None,dbport=None,dbpass=None,dbuser=None,dbname=None):
         self.__api = Functions(host)
         self.real_volume = real_volume or False
-        self.localtime = localtime 
+        self.__tz_local = tz_local
         self.__utc_timezone = timezone('UTC')
         self.__my_timezone = get_localzone()
         self.__utc_brocker_offset = self.___utc_brocker_offset()
@@ -499,9 +499,10 @@ class Metatrader:
         }
         return TIMECANDLE[timeframe]
 
-    def __setlocaltime_dataframe(self, df):
+    def __set_utc_or_localtime_tz_df(self, df):
         df.index = df.index.tz_localize(self.__utc_brocker_offset)
-        df.index = df.index.tz_convert(self.__my_timezone)
+        if self.__tz_local:
+            df.index = df.index.tz_convert(self.__my_timezone)
         df.index = df.index.tz_localize(None)
         return df
    
@@ -690,9 +691,8 @@ class Metatrader:
                 start(self.__save_to_db,data=[df],repeat=1, max_threads=20)
             else:
                 try:
-                    if self.localtime:
-                        self.__setlocaltime_dataframe(df)
-                        self.__historyQ.put(df)
+                    self.__set_utc_or_localtime_tz_df(df)
+                    self.__historyQ.put(df)
                     
                 except AttributeError:
                     pass
@@ -704,8 +704,7 @@ class Metatrader:
         if self.dbtype == 'SQLITE':
             q = DictSQLite('history',multithreading=True)
             try:
-                if self.localtime:
-                    self.__setlocaltime_dataframe(df)
+                self.__set_utc_or_localtime_tz_df(df)
                     
             except AttributeError:
                 pass
@@ -713,8 +712,7 @@ class Metatrader:
             q[f"{self.__active_name}"] = df
         else:
             try:
-                if self.localtime:
-                    self.__setlocaltime_dataframe(df)
+                self.__set_utc_or_localtime_tz_df(df)
             except AttributeError:
                 pass
         if self.dbtype == "INFLUXDB":
