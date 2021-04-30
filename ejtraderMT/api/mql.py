@@ -228,7 +228,7 @@ class Functions:
 
 class Metatrader:
 
-    def __init__(self, host=None, real_volume=None, tz_local=True, dbtype=None,dbhost=None,dbport=None,dbpass=None,dbuser=None,dbname=None):
+    def __init__(self, host=None, real_volume=None, tz_local=None, dbtype=None,dbhost=None,dbport=None,dbpass=None,dbuser=None,dbname=None):
         self.__api = Functions(host)
         self.real_volume = real_volume or False
         self.__tz_local = tz_local

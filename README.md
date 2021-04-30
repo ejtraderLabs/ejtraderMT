@@ -1,4 +1,4 @@
-# Python Metatrader DataFrame API 3.0.5
+# Python Metatrader DataFrame API 3.0.6
 
 ## Installation for docker Metatrader 5 Server API
 
@@ -66,15 +66,15 @@ make sure thesisAPI expert are load on the chart
 to change the host IP example Metatrader("192.168.1.100") ou
 you can use doman example  "metatraderserverdomain.com"
 
-for you broker time on the Dataframe  Metatrader(localtime=False)
-attention local  time is the default for Dataframe index "date"
+for you local time on the Dataframe  Metatrader(tz_local=True)
+attention utc time is the default for Dataframe index "date"
 
 
 for real volume for active like WIN futures ou centralized market use Metatrader(real_volume=True)
 attention tick volume is the default
 
 
-to use more than one option just use , example Metatrader(host='hostIP',localtime=False)
+to use more than one option just use , example Metatrader(host='hostIP',tz_local=True)
 '''
 api = Metatrader()
 
