@@ -468,10 +468,10 @@ class Metatrader:
 
     def ___date_to_timestamp_broker(self):
         brokertime = time.mktime(datetime.strptime(self.accountInfo()['time'], '%Y.%m.%d %H:%M:%S').timetuple())
-        return round(brokertime)
+        return brokertime
 
-    def __brokerTimeCalculation(self,s):
-        delta = timedelta(seconds = s)
+    def __brokerTimeDelta(self,m):
+        delta = timedelta(days = m)
         broker = datetime.strptime(self.accountInfo()['time'], '%Y.%m.%d %H:%M:%S')
         result = broker - delta
         return result
@@ -517,8 +517,12 @@ class Metatrader:
         if isinstance(symbol, tuple):
             for symbols in symbol:
                 self.__symbol = symbols
-        else:
+                print(symbols)
+        elif isinstance(symbol, list):
             self.__symbol = symbol
+        else:
+            self.__symbol = [symbol]
+
         if chartTF:
             if self.__database:
                 try:
@@ -540,7 +544,7 @@ class Metatrader:
                     else:
                         df = self.__client.query(f"select * from {self.__symbol[0]}")
                         df = df[self.__symbol[0]]
-                        df.index = df.index.tz_localize(None)
+                        
                         df.index.name = 'date'
                 except KeyError:
                     df = f" {self.__symbol[0]}  isn't on database"
@@ -552,7 +556,7 @@ class Metatrader:
                     else:
                         df = self.__client.query(f"select * from {self.__symbol}")
                         df = df[self.__symbol]
-                        df.index = df.index.tz_localize(None)
+                        
                         df.index.name = 'date'
                 except KeyError:
                     df = f" {self.__symbol}  isn't on database"
@@ -562,105 +566,7 @@ class Metatrader:
     
 
 
-    # def __historyThread(self,data):
-    #     actives = self.__symbol
-    #     chartTF = self.chartTF
-    #     fromDate = self.fromDate
-    #     toDate  = self.toDate
-    #     main = pd.DataFrame()
-    #     current = pd.DataFrame()
-    #     if(chartTF == 'TICK'):
-    #         chartConvert = 60
-    #     else:
-    #         chartConvert = self.__timeframe_to_sec(chartTF)
-    #     for active in actives:
-    #         # the first symbol on list is the main and the rest will merge
-    #         if active == actives[0]:
-    #             # get data
-    #             if fromDate and toDate:
-    #                 data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-    #                                     fromDate=self.__date_to_timestamp(fromDate), toDate=self.__date_to_timestamp(toDate))
-    #             elif isinstance(fromDate, int):
-    #                 data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-    #                                     fromDate=self.datetime_to_timestamp(self.__brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
-    #             elif isinstance(fromDate, str) and toDate==None:
-    #                 data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-    #                                     fromDate=self.__date_to_timestamp(fromDate),toDate=self.___date_to_timestamp_broker())
-    #             else:
-    #                 data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-    #                                     fromDate=self.datetime_to_timestamp(self.__brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
-    #             self.__api.Command(action="RESET")
-    #             if self.dataframe:
-    #                 try:
-    #                     main = pd.DataFrame(data['data'])
-    #                     main = main.set_index([0])
-    #                     main.index.name = 'date'
-                        
 
-    #                     # TICK DATA
-    #                     if(chartTF == 'TICK'):
-    #                         main.columns = ['bid', 'ask']
-    #                         main.index = pd.to_datetime(main.index, unit='ms')
-    #                     else:
-    #                         main.index = pd.to_datetime(main.index, unit='s')
-    #                         if self.real_volume:
-    #                             del main[5]
-    #                         else:
-    #                             del main[6]
-    #                         main.columns = ['open', 'high', 'low',
-    #                                         'close', 'volume', 'spread']
-    #                 except KeyError:
-    #                     pass
-    #         else:
-    #              # get data
-    #             if fromDate and toDate:
-    #                 data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-    #                                     fromDate=self.__date_to_timestamp(fromDate), toDate=self.__date_to_timestamp(toDate))
-    #             elif isinstance(fromDate, int):
-    #                 data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-    #                                     fromDate=self.datetime_to_timestamp(self.__brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
-    #             elif isinstance(fromDate, str) and toDate==None:
-    #                 data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-    #                                     fromDate=self.__date_to_timestamp(fromDate),toDate=self.___date_to_timestamp_broker())
-    #             else:
-    #                 data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-    #                                     fromDate=self.datetime_to_timestamp(self.__brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
-
-    #             self.__api.Command(action="RESET")
-    #             if self.dataframe:
-    #                 try:
-    #                     current = pd.DataFrame(data['data'])
-    #                     current = current.set_index([0])
-    #                     current.index.name = 'date'
-    #                     active = active.lower()
-    #                     # TICK DATA
-    #                     if(chartTF == 'TICK'):
-    #                         current.index = pd.to_datetime(current.index, unit='ms')
-    #                         current.columns = [f'{active}_bid', f'{active}_ask']
-    #                     else:
-    #                         current.index = pd.to_datetime(current.index, unit='s')
-    #                         if self.real_volume:
-    #                             del current[5]
-    #                         else:
-    #                             del current[6]
-                
-    #                         current.columns = [f'{active}_open', f'{active}_high',
-    #                                         f'{active}_low', f'{active}_close', f'{active}_volume', f'{active}_spread']
-
-    #                     main = pd.merge(main, current, how='inner',
-    #                                     left_index=True, right_index=True)
-    #                 except KeyError:
-    #                     pass
-    #     if self.dataframe:
-    #         try:
-    #             if self.localtime:
-    #                 self.__setlocaltime_dataframe(main)
-    #         except AttributeError:
-    #             pass
-    #         main = main.loc[~main.index.duplicated(keep='first')]
-    #     else:
-    #         main = data
-    #     self.__historyQ.put(main)
 
     
 
@@ -677,9 +583,12 @@ class Metatrader:
             except OSError:
                 pass
             # count data
-            start_date = datetime.strptime(fromDate, "%d/%m/%Y")
+            if not isinstance(fromDate, int):
+                start_date = datetime.strptime(fromDate, "%d/%m/%Y")
+            else:
+                start_date = self.__brokerTimeDelta(fromDate)
             if not toDate:
-                end_date = datetime.now() #date(2021, 1, 1)
+                end_date = self.__brokerTimeDelta(0)
             else:
                 end_date = datetime.strptime(toDate, "%d/%m/%Y")
 
@@ -710,15 +619,11 @@ class Metatrader:
                         if fromDate and toDate:
                             data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
                                                 fromDate=self.__date_to_timestamp(fromDate), toDate=self.__date_to_timestamp(toDate))
-                        elif isinstance(fromDate, int):
-                            data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.datetime_to_timestamp(self.__brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
+                        
                         elif isinstance(fromDate, str) and toDate==None:
                             data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.__date_to_timestamp(fromDate),toDate=self.___date_to_timestamp_broker())
-                        else:
-                            data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.datetime_to_timestamp(self.__brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
+                                                fromDate=self.__date_to_timestamp(fromDate),toDate=self.__date_to_timestamp(toDate))
+                        
                         self.__api.Command(action="RESET")
                         try:
                             main = pd.DataFrame(data['data'])
@@ -745,16 +650,11 @@ class Metatrader:
                         if fromDate and toDate:
                             data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
                                                 fromDate=self.__date_to_timestamp(fromDate), toDate=self.__date_to_timestamp(toDate))
-                        elif isinstance(fromDate, int):
-                            data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.datetime_to_timestamp(self.__brokerTimeCalculation((10800 + chartConvert) + fromDate * chartConvert - chartConvert) ))
+                        
                         elif isinstance(fromDate, str) and toDate==None:
                             data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.__date_to_timestamp(fromDate),toDate=self.___date_to_timestamp_broker())
-                        else:
-                            data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.datetime_to_timestamp(self.__brokerTimeCalculation((10800 + chartConvert) + 100 * chartConvert - chartConvert) ))
-
+                                                fromDate=self.__date_to_timestamp(fromDate),toDate=sself.__date_to_timestamp(toDate))
+                       
                         self.__api.Command(action="RESET")
                         try:
                             current = pd.DataFrame(data['data'])
@@ -786,29 +686,37 @@ class Metatrader:
                 start_date += delta
             pbar.close()
             df = pd.concat(appended_data)
-            if self.__database:
-                start(self.__save_to_db,data=[df],repeat=1, max_threads=20)
-            else:
-                self.__historyQ.put(df)
+            start(self.__save_to_db,data=[df],repeat=1, max_threads=20)
+            
+                
 
 
 
     def __save_to_db(self,df):
-        if self.dbtype == 'SQLITE':
-            q = DictSQLite('history',multithreading=True)
-            try:
-                if self.localtime:
-                    self.__setlocaltime_dataframe(df)
-                    
-            except AttributeError:
-                pass
-        
-            q[f"{self.__active_name}"] = df
+        if self.__database:
+            if self.dbtype == 'SQLITE':
+                q = DictSQLite('history',multithreading=True)
+                try:
+                    if self.localtime:
+                        self.__setlocaltime_dataframe(df)
+                        
+                except AttributeError:
+                    pass
+            
+                q[f"{self.__active_name}"] = df
+            else:
+                try:
+                    if self.localtime:
+                        self.__setlocaltime_dataframe(df)
+                except AttributeError:
+                    pass
+            if self.dbtype == "INFLUXDB":
+                self.__client.write_points(df, f"{self.__active_name}", protocol=self.protocol)
         else:
-            try:
-                if self.localtime:
-                    self.__setlocaltime_dataframe(df)
-            except AttributeError:
-                pass
-        if self.dbtype == "INFLUXDB":
-            self.__client.write_points(df, f"{self.__active_name}", protocol=self.protocol)
+                try:
+                    if self.localtime:
+                        self.__setlocaltime_dataframe(df)
+                        self.__historyQ.put(df)
+                    
+                except AttributeError:
+                    pass
