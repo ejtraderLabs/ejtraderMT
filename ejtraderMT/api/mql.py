@@ -686,33 +686,9 @@ class Metatrader:
                 start_date += delta
             pbar.close()
             df = pd.concat(appended_data)
-            start(self.__save_to_db,data=[df],repeat=1, max_threads=20)
-            
-                
-
-
-
-    def __save_to_db(self,df):
-        if self.__database:
-            if self.dbtype == 'SQLITE':
-                q = DictSQLite('history',multithreading=True)
-                try:
-                    if self.localtime:
-                        self.__setlocaltime_dataframe(df)
-                        
-                except AttributeError:
-                    pass
-            
-                q[f"{self.__active_name}"] = df
+            if self.__database:
+                start(self.__save_to_db,data=[df],repeat=1, max_threads=20)
             else:
-                try:
-                    if self.localtime:
-                        self.__setlocaltime_dataframe(df)
-                except AttributeError:
-                    pass
-            if self.dbtype == "INFLUXDB":
-                self.__client.write_points(df, f"{self.__active_name}", protocol=self.protocol)
-        else:
                 try:
                     if self.localtime:
                         self.__setlocaltime_dataframe(df)
@@ -720,3 +696,26 @@ class Metatrader:
                     
                 except AttributeError:
                     pass
+                
+
+
+
+    def __save_to_db(self,df):
+        if self.dbtype == 'SQLITE':
+            q = DictSQLite('history',multithreading=True)
+            try:
+                if self.localtime:
+                    self.__setlocaltime_dataframe(df)
+                    
+            except AttributeError:
+                pass
+        
+            q[f"{self.__active_name}"] = df
+        else:
+            try:
+                if self.localtime:
+                    self.__setlocaltime_dataframe(df)
+            except AttributeError:
+                pass
+        if self.dbtype == "INFLUXDB":
+            self.__client.write_points(df, f"{self.__active_name}", protocol=self.protocol)
