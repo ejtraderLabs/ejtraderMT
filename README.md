@@ -74,7 +74,7 @@ for real volume for active like WIN futures ou centralized market use Metatrader
 attention tick volume is the default
 
 
-to use more than one option just use , example Metatrader(host='hostIP',localtime=True)
+to use more than one option just use , example Metatrader(host='hostIP',localtime=False)
 '''
 api = Metatrader()
 
