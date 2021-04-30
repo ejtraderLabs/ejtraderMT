@@ -28,7 +28,7 @@ password: root
 
 if you dont want to use docker you can download the expert and install on your Metatrader 5
 simple download the folder MQL5 from the link below and install it on the Metatrader
-https://github.com/traderpedroso/ejtraderMTServer
+https://github.com/ejtraderLabs/MQL5-ejtraderMT
 
 # Dockerfile and source for wine vnc 
 https://github.com/ejtraderLabs/ejtraderMT-Docker
@@ -59,7 +59,7 @@ from ejtraderMT import Metatrader
 
 ### Connect Metatrader 5
 
-make sure thesisAPI expert are load on the chart
+make sure ejtraderMT expert are load on the chart
 
 ```python
 '''
