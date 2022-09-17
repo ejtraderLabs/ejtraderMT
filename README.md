@@ -14,7 +14,7 @@ docker run -d --restart=always -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 155
 ```
 
 ### harder way installing direct to your Metatrader 5 on Windows Machine
-Fist download MQL5 [download](https://github.com/ejtraderLabs/MQL5-ejtraderMT) source code and install it on the Metatrader 5
+Fist download MQL5 source code and install it on the Metatrader 5 [download](https://github.com/ejtraderLabs/MQL5-ejtraderMT)
 
 second download and install Microsoft Visual C++ 2015 [Download](https://www.microsoft.com/pt-br/download/details.aspx?id=52685)
 
