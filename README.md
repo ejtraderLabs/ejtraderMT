@@ -1,6 +1,4 @@
-# Metatrader 5 API - for Trading and history OHLC  Dataframe
-
-## Installation for Python API module
+# EjtraderMT Python Metatrader 5 API
 
 
 ##### Install stable version using pip 
@@ -27,9 +25,13 @@ docker volume create ejtraderMT
 docker run -d --restart=always -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -p 15558:15558 --name ejtraderMT -v ejtraderMT:/data ejtrader/metatrader:5
 
 ```
+Dockerfile and source for Docker wine vnc [github](https://github.com/ejtraderLabs/Metatrader5-Docker)
+
+
+
 ##### Access Metatrader 5 via VNC
 
-download VNC VIEWER  or any other vnc client of your preference:[Download](https://www.realvnc.com/connect/download/viewer/)
+download VNC VIEWER  or any other vnc client of your preference: [Download](https://www.realvnc.com/connect/download/viewer/)
 
 ```
 username: root
@@ -38,15 +40,14 @@ password: root
 
 
 #### harder way installing direct to your Metatrader 5 on Windows Machine
-First download MQL5 source code and install it on the Metatrader 5 [download](https://github.com/ejtraderLabs/MQL5-ejtraderMT)
+First download MQL5 source code and install it on the Metatrader 5 [github](https://github.com/ejtraderLabs/MQL5-ejtraderMT)
 
 second download and install Microsoft Visual C++ 2015 [Download](https://www.microsoft.com/pt-br/download/details.aspx?id=52685)
 
 
 
 
-# Dockerfile and source for wine vnc 
-Download [Metatrader 5 Docker](https://github.com/ejtraderLabs/Metatrader5-Docker)
+
 
 
 
