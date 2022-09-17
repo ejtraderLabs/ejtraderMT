@@ -1,10 +1,10 @@
-# Python Metatrader DataFrame API 3.0.6
+# Python Metatrader5 API 
 
-## Installation for docker Metatrader 5 Server API
 
-###### first make sure you have docker installed on your pc
+## Runing Metatrader 5 on Docker or windows machine
 
-###### run this command on your terminal or powershell
+
+### Easy way is using docker make sure to have docker runing on your machine
 
 ```
 
@@ -13,25 +13,25 @@ docker run -d --restart=always -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 155
 
 ```
 
+### harder way installing direct to your Metatrader 5 on Windows Machine
+Fist download MQL5 [download](https://github.com/ejtraderLabs/MQL5-ejtraderMT) source code and install it on the Metatrader 5
+
+second download and install Microsoft Visual C++ 2015 [Download](https://www.microsoft.com/pt-br/download/details.aspx?id=52685)
+
 # Access Metatrader 5 via VNC
 
-download vnc viewer from url below or any other vnc client of your preference:
+download VNC VIEWER [Download](https://www.realvnc.com/connect/download/viewer/) or any other vnc client of your preference:
 
-https://www.realvnc.com/connect/download/viewer/
+
 
 ```
 username: root
 password: root
 ```
 
-# using API withou docker direct to Metrader 5
-
-if you dont want to use docker you can download the expert and install on your Metatrader 5
-simple download the folder MQL5 from the link below and install it on the Metatrader
-https://github.com/ejtraderLabs/MQL5-ejtraderMT
 
 # Dockerfile and source for wine vnc 
-https://github.com/ejtraderLabs/ejtraderMT-Docker
+Download [Metatrader 5 Docker](https://github.com/ejtraderLabs/Metatrader5-Docker)
 
 
 ## Installation for Python API module
