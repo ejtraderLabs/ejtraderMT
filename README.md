@@ -1,28 +1,35 @@
-# Python Metatrader 5 API - for Trading and history OHLC  Dataframe
+# Metatrader 5 API - for Trading and history OHLC  Dataframe
+
+## Installation for Python API module
+
+
+##### Install stable version using pip 
+```
+pip install ejtraderMT -U
+```
+#### From source code
+
+for developers attention may contain countless bugs
+```
+git clone https://github.com/traderpedroso/ejtraderMT
+cd ejtraderMT
+python setup.py install
+```
 
 
 ## Runing Metatrader 5 on Docker or windows machine
 
 
-### Easy way is using docker make sure to have docker runing on your machine
+#### Easy way is using docker make sure to have docker runing on your machine
 
 ```
-
 docker volume create ejtraderMT
 docker run -d --restart=always -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -p 15558:15558 --name ejtraderMT -v ejtraderMT:/data ejtrader/metatrader:5
 
 ```
-
-### harder way installing direct to your Metatrader 5 on Windows Machine
-Fist download MQL5 source code and install it on the Metatrader 5 [download](https://github.com/ejtraderLabs/MQL5-ejtraderMT)
-
-second download and install Microsoft Visual C++ 2015 [Download](https://www.microsoft.com/pt-br/download/details.aspx?id=52685)
-
-# Access Metatrader 5 via VNC
+##### Access Metatrader 5 via VNC
 
 download VNC VIEWER  or any other vnc client of your preference:[Download](https://www.realvnc.com/connect/download/viewer/)
-
-
 
 ```
 username: root
@@ -30,31 +37,26 @@ password: root
 ```
 
 
+#### harder way installing direct to your Metatrader 5 on Windows Machine
+First download MQL5 source code and install it on the Metatrader 5 [download](https://github.com/ejtraderLabs/MQL5-ejtraderMT)
+
+second download and install Microsoft Visual C++ 2015 [Download](https://www.microsoft.com/pt-br/download/details.aspx?id=52685)
+
+
+
+
 # Dockerfile and source for wine vnc 
 Download [Metatrader 5 Docker](https://github.com/ejtraderLabs/Metatrader5-Docker)
 
 
-## Installation for Python API module
 
-```
-# for last stable use pip
-pip install ejtraderMT -U
 
-or
 
-#for developers attention may contain countless bugs
-git clone https://github.com/traderpedroso/ejtraderMT
-cd ejtraderMT
-python setup.py install
-
-```
 
 ### import
 
 ```python
 from ejtraderMT import Metatrader
-
-
 ```
 
 ### Connect Metatrader 5
