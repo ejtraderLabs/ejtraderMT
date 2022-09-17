@@ -1,4 +1,4 @@
-# Python Metatrader5 API 
+# Python Metatrader 5 API - for Trading and history OHLC  Dataframe
 
 
 ## Runing Metatrader 5 on Docker or windows machine
