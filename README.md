@@ -25,6 +25,29 @@ docker volume create ejtraderMT
 docker run -d --restart=always -p 5900:5900 -p 15555:15555 -p 15556:15556 -p 15557:15557 -p 15558:15558 --name ejtraderMT -v ejtraderMT:/data ejtrader/metatrader:5
 
 ```
+or docker compose
+
+```yml
+version: '3.8'
+services:
+  app:
+    container_name: metatrader
+    image: ejtrader/metatrader:5
+    restart: unless-stopped
+    ports:
+      - '5900:5900'
+      - '15555:15555'
+      - '15556:15556'
+      - '15557:15557'
+      - '15558:15558'
+    volumes:
+      - ejtraderMT:/data
+ 
+      
+volumes:
+  ejtraderMT: {}
+```
+
 Dockerfile and source for Docker wine vnc [github](https://github.com/ejtraderLabs/Metatrader5-Docker)
 
 
