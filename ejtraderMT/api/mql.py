@@ -254,6 +254,12 @@ class Metatrader:
     def calender(self,symbol,fromDate,toDate):
         df = self.__api.Command(action="CALENDAR", actionType="DATA", symbol=symbol, 
                                                 fromDate=self.__date_to_timestamp(fromDate), toDate=self.__date_to_timestamp(toDate))
+        df = pd.DataFrame(df['data'])
+        df.columns = ['date','currency', 'impact','event','country','actual','forecast','previous','revised']
+        df['date'] = pd.to_datetime(df['date'], errors='coerce')
+        df = df.dropna(subset=['date'])
+        df = df.set_index('date')
+        df.index = pd.to_datetime(df.index)
         return df
     
 
