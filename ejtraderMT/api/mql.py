@@ -250,6 +250,12 @@ class Metatrader:
          
     def balance(self):
         return self.__api.Command(action="BALANCE")
+    
+    def calender(self,symbol,fromDate,toDate):
+        df = self.__api.Command(action="CALENDAR", actionType="DATA", symbol=symbol, 
+                                                fromDate=self.__date_to_timestamp(fromDate), toDate=self.__date_to_timestamp(toDate))
+        return df
+    
 
     def accountInfo(self):
         return self.__api.Command(action="ACCOUNT")
@@ -654,7 +660,7 @@ class Metatrader:
                         
                         elif isinstance(fromDate, str) and toDate==None:
                             data = self.__api.Command(action="HISTORY", actionType="DATA", symbol=active, chartTF=chartTF,
-                                                fromDate=self.__date_to_timestamp(fromDate),toDate=sself.__date_to_timestamp(toDate))
+                                                fromDate=self.__date_to_timestamp(fromDate),toDate=self.__date_to_timestamp(toDate))
                        
                         self.__api.Command(action="RESET")
                         try:
