@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, date
+import symbol
 from pytz import timezone
 from tzlocal import get_localzone
 from queue import Queue
@@ -251,20 +252,91 @@ class Metatrader:
     def balance(self):
         return self.__api.Command(action="BALANCE")
     
-    def calendar(self,symbol=None, fromDate=None, toDate=None):
+    
+    def calendar(self,symbol=None, fromDate=None, toDate=None, database=None):
+        self._symbol = symbol
+        self._fromDate = fromDate
+        self._toDate = toDate
+        self.__calendarQ = Queue()
+        self.__database = database
         try:
-            df = self.__api.Command(action="CALENDAR", actionType="DATA", symbol=None, 
-                                            fromDate=self.__date_to_timestamp(fromDate), toDate=self.__date_to_timestamp(toDate))
-            df = pd.DataFrame(df['data'])
-            df.columns = ['date','currency', 'impact','event','country','actual','forecast','previous']
-            df['date'] = pd.to_datetime(df['date'], errors='coerce')
-            df = df.dropna(subset=['date'])
-            df = df.set_index('date')
-            df.index = pd.to_datetime(df.index)
+            start(self._calendar,repeat=1, max_threads=20)
         except:
-            pass
+            print("Error: unable to start History thread")
         
-        return df
+        return self.__calendarQ.get()
+        
+    
+    
+    
+    def _calendar(self,data):
+        symbol = self._symbol
+        fromDate = self._fromDate 
+        toDate = self._toDate
+        # count data
+        if not isinstance(fromDate, int):
+            start_date = datetime.strptime(fromDate, "%d/%m/%Y")
+        else:
+            start_date = self.__brokerTimeDelta(fromDate)
+        if not toDate:
+            end_date = self.__brokerTimeDelta(0)
+        else:
+            end_date = datetime.strptime(toDate, "%d/%m/%Y")
+        
+
+        delta = timedelta(days=1)
+        delta2 = timedelta(days=1)
+        diff_days = start_date - end_date
+        days_count = diff_days.days
+        pbar = tqdm(total=abs(days_count))
+        appended_data = []
+        
+        while start_date <= end_date:
+            pbar.update(delta.days)
+            fromDate = start_date.strftime("%d/%m/%Y")
+            toDate = start_date
+            toDate +=  delta2
+            toDate = toDate.strftime("%d/%m/%Y")
+            if fromDate and toDate:
+                try:
+                    df = self.__api.Command(action="CALENDAR", actionType="DATA", symbol=symbol, 
+                                                    fromDate=self.__date_to_timestamp(fromDate), toDate=self.__date_to_timestamp(toDate))
+                    
+                except:
+                    pass
+            elif isinstance(fromDate, str) and toDate==None:
+                try:
+                    df = self.__api.Command(action="CALENDAR", actionType="DATA", symbol=symbol, 
+                                                    fromDate=self.__date_to_timestamp(fromDate), toDate=self.__date_to_timestamp(toDate))
+                except:
+                    pass
+            self.__api.Command(action="RESET")
+            try:
+                df = pd.DataFrame(df['data'])
+                df.columns = ['date','currency', 'impact','event','country','actual','forecast','previous']
+                df['date'] = pd.to_datetime(df['date'], errors='coerce')
+                df = df.dropna(subset=['date'])
+                df = df.set_index('date')
+                df.index = pd.to_datetime(df.index)
+            except:
+                pass
+            
+            
+            appended_data.append(df)
+             
+            start_date += delta
+        pbar.close()
+        df = pd.concat(appended_data)
+        if self.__database:
+            start(self.__save_to_db,data=[df],repeat=1, max_threads=20)
+        else:
+            try:
+                self.__set_utc_or_localtime_tz_df(df)
+                self.__calendarQ.put(df)
+            except AttributeError:
+                pass
+                
+        
     
 
     def accountInfo(self):
