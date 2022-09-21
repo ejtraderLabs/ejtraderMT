@@ -115,6 +115,32 @@ print(accountInfo['broker'])
 print(accountInfo['balance'])
 ```
 
+#### Economic Calendar
+
+```python
+symbol = "EURUSD"
+fromDate = "20/08/2021"
+toDate = "24/08/2022"
+
+calendar = api.calendar(symbol,fromDate,toDate)
+print(calendar)
+
+	              currency	impact	event	country	actual	forecast	previous
+date							
+2021-08-20 06:00:00	EUR	2	PPI m/m(ppi-mm)	Germany(DE)	1.9	0.9	1.3
+2021-08-20 06:00:00	EUR	1	PPI y/y(ppi-yy)	Germany(DE)	10.4	9.4	8.5
+2021-08-20 17:00:00	USD	2	Baker Hughes US Oil Rig Count(baker-hughes-us-...	United States(US)	405	None	397
+2021-08-20 17:00:00	USD	2	Baker Hughes US Total Rig Count(baker-hughes-u...	United States(US)	503	None	500
+2021-08-20 19:30:00	EUR	1	CFTC EUR Non-Commercial Net Positions(cftc-eur...	European Union(EU)	57.6 K	None	33.9 K
+...	...	...	...	...	...	...	...
+2022-08-24 14:30:00	USD	1	EIA Heating Oil Stocks Change(eia-heating-oil-...	United States(US)	0.845 M	-0.013 M	0.249 M
+2022-08-24 14:30:00	USD	1	EIA Gasoline Stocks Change(eia-gasoline-stocks...	United States(US)	-0.027 M	-1.829 M	-4.642 M
+2022-08-24 14:30:00	USD	1	EIA Refinery Crude Oil Daily Inputs Change(eia...	United States(US)	-0.168 M	None	-0.158 M
+2022-08-24 14:30:00	USD	1	EIA Refinery Utilization Rate Change(eia-refin...	United States(US)	0.3	None	-0.8
+2022-08-24 17:00:00	USD	1	5-Year Note Auction(5-year-note-auction)	United States(US)	3.23	None	2.86
+
+```
+
 # History Dataframe Ready
 
 #### History from Date to Date
