@@ -331,7 +331,7 @@ if 'positions' in positions:
 #### Orders & Manipulation
 
 ```python
-orders = api.order()
+orders = api.orders()
 
 if 'orders' in orders:
     for order in orders['orders']:
