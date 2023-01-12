@@ -1,5 +1,5 @@
 pandas>=0.25.1
-pyzmq==19.0.2
+pyzmq==25.0.0
 tzlocal>=2.1
 ejtraderTH==1.0.3
 ejtraderDB==1.0.2
