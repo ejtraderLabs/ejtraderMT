@@ -763,8 +763,9 @@ class Metatrader:
                                 current.columns = [f'{active}_open', f'{active}_high',
                                                 f'{active}_low', f'{active}_close', f'{active}_volume', f'{active}_spread']
 
-                            main = pd.merge(main, current, how='inner',
-                                            left_index=True, right_index=True)
+                            # main = pd.merge(main, current, how='inner',
+                            #                 left_index=True, right_index=True)
+                            main = pd.merge(main, current, on='date')
                         except KeyError:
                             pass
                 
