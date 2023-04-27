@@ -43,9 +43,6 @@ setup(
         "Topic :: Software Development :: Libraries"
     ],
     python_requires='>=3',
-    extras_require={
-        "docs": requirements(filename='docs/requirements.txt')
-    },
     keywords=', '.join([
         'metatrader', 'f-api', 'historical-data',
         'financial-data', 'stocks', 'funds', 'etfs',
