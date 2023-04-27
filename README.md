@@ -1,3 +1,6 @@
+![Pypi Publish](https://github.com/ejtraderLabs/ejtraderMT/actions/workflows/python-publish.yml/badge.svg)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/ejtraderLabs/ejtraderMT)
+
 # EjtraderMT Python Metatrader 5 API
 
 
