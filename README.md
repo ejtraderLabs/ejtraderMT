@@ -1,5 +1,5 @@
 ![Pypi Publish](https://github.com/ejtraderLabs/ejtraderMT/actions/workflows/python-publish.yml/badge.svg)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/ejtraderLabs/ejtraderMT)
+[![Release](https://img.shields.io/github/v/release/ejtraderLabs/ejtraderMT)](https://github.com/ejtraderLabs/ejtraderMT/releases/latest)  [![License](https://img.shields.io/github/license/ejtraderLabs/ejtraderMT)](https://github.com/ejtraderLabs/ejtraderMT/blob/master/LICENSE)
 
 # EjtraderMT Python Metatrader 5 API
 
