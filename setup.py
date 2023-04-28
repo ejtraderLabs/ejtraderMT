@@ -21,7 +21,7 @@ setup(
     packages=find_packages(),
     url='https://ejtraderMT.readthedocs.io/',
     download_url='https://ejtrader.com',
-    license='MIT License',
+    license='GPL-3.0',
     author='Emerson Pedroso',
     author_email='support@ejtrader.com',
     description='Metatrader API',
