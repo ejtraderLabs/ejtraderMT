@@ -272,6 +272,7 @@ class Metatrader:
         symbol = self._symbol
         fromDate = self._fromDate 
         toDate = self._toDate
+        df = pd.DataFrame()
         # count data
         if not isinstance(fromDate, int):
             start_date = datetime.strptime(fromDate, "%d/%m/%Y")
@@ -282,20 +283,19 @@ class Metatrader:
         else:
             end_date = datetime.strptime(toDate, "%d/%m/%Y")
         
-
         delta = timedelta(days=1)
         delta2 = timedelta(days=1)
         diff_days = start_date - end_date
         days_count = diff_days.days
         pbar = tqdm(total=abs(days_count))
         appended_data = []
-        
         while start_date <= end_date:
             pbar.update(delta.days)
             fromDate = start_date.strftime("%d/%m/%Y")
             toDate = start_date
             toDate +=  delta2
-            toDate = toDate.strftime("%d/%m/%Y")
+            toDate = toDate.strftime("%d/%m/%Y") 
+                
             if fromDate and toDate:
                 try:
                     df = self.__api.Command(action="CALENDAR", actionType="DATA", symbol=symbol, 
