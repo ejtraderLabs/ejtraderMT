@@ -1,6 +1,6 @@
 ![Pypi Publish](https://github.com/ejtraderLabs/ejtraderMT/actions/workflows/python-publish.yml/badge.svg)
 [![Release](https://img.shields.io/github/v/release/ejtraderLabs/ejtraderMT)](https://github.com/ejtraderLabs/ejtraderMT/releases/latest)  [![License](https://img.shields.io/github/license/ejtraderLabs/ejtraderMT)](https://github.com/ejtraderLabs/ejtraderMT/blob/master/LICENSE)
-
+[![PyPi downloads](https://img.shields.io/pypi/dm/ejtradermt?style=flat-square&logo=pypi&logoColor=white)](https://pypi.org/project/ejtradermt/)
 # EjtraderMT Python Metatrader 5 API
 
 
