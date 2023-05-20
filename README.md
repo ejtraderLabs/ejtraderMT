@@ -12,9 +12,13 @@ pip install ejtraderMT -U
 
 for developers attention may contain countless bugs
 ```
-git clone https://github.com/traderpedroso/ejtraderMT
+git clone https://github.com/ejtraderLabs/ejtraderMT
 cd ejtraderMT
 python setup.py install
+
+or 
+
+pip install git+https://github.com/ejtraderLabs/ejtraderMT.git
 ```
 
 
