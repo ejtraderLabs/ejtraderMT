@@ -2,7 +2,7 @@ use zmq::{Context, REQ, PULL};
 use serde::{Serialize, Deserialize};
 use serde_json::{Value, from_str};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Command {
     pub action: String,
     pub action_type: Option<String>,
@@ -34,17 +34,15 @@ pub struct Functions {
 
 
 impl Functions {
-    pub fn new(host: Option<String>) -> Self {
-        let host = host.unwrap_or_else(|| String::from("192.168.1.153"));
-
+    pub fn new(host: String) -> Self {
         let context = Context::new();
-        let sys_socket = context.socket(REQ).unwrap();
+        let sys_socket = context.socket(REQ).expect("Failed to create subscriber socket");
         sys_socket
-            .connect(&format!("tcp://{}:{}", host, 15555))
+            .connect(&format!("tcp://{}:{}", &host, 15555))
             .unwrap();
         let data_socket = context.socket(PULL).unwrap();
         data_socket
-            .connect(&format!("tcp://{}:{}", host, 15556))
+            .connect(&format!("tcp://{}:{}", &host, 15556))
             .unwrap();
 
         Functions {

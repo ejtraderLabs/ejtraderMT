@@ -1,33 +1,16 @@
 mod connection;
-use connection::Functions; 
-use connection::Command; 
+
+use connection::{Command, Functions};
+use std::env;
 
 fn main() {
-    let mut functions = Functions::new(None);
+    let args: Vec<String> = env::args().collect();
+    let host = args.get(1).cloned().unwrap_or_else(|| String::from("192.168.1.153"));
 
-    let command = Command {
-        action: "ACCOUNT".to_string(),
-        action_type: None,
-        symbol: None,
-        chart_tf: None,
-        from_date: None,
-        to_date: None,
-        id: None,
-        magic: None,
-        volume: None,
-        price: None,
-        stoploss: None,
-        takeprofit: None,
-        expiration: None,
-        deviation: None,
-        comment: None,
-        chart_id: None,
-        indicator_chart_id: None,
-        chart_indicator_sub_window: None,
-        style: None,
-    };
-    
-    
+    let mut functions = Functions::new(host);
+    let mut command = Command::default();
+    command.action = "ACCOUNT".to_string();
+
     match functions.command(command) {
         Ok(value) => println!("Value: {}", value),
         Err(e) => println!("Error: {}", e),
