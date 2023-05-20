@@ -1,7 +1,6 @@
 use zmq::{Context, REQ, PULL};
 use serde::{Serialize, Deserialize};
 use serde_json::{Value, from_str};
-
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct Command {
     pub action: String,
@@ -40,10 +39,16 @@ impl Functions {
         sys_socket
             .connect(&format!("tcp://{}:{}", &host, 15555))
             .unwrap();
+        // Aqui nós configuramos o timeout para recebimento e envio em milissegundos
+        sys_socket.set_rcvtimeo(60000).unwrap(); // 1 minuto
+        sys_socket.set_sndtimeo(60000).unwrap(); // 1 minuto
+
         let data_socket = context.socket(PULL).unwrap();
         data_socket
             .connect(&format!("tcp://{}:{}", &host, 15556))
             .unwrap();
+        data_socket.set_rcvtimeo(60000).unwrap(); // 1 minuto
+        data_socket.set_sndtimeo(60000).unwrap(); // 1 minuto
 
         Functions {
             host,
