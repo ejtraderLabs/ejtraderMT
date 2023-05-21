@@ -366,12 +366,8 @@ class Metatrader:
             appended_data.append(df)
             start_date += delta
         pbar.close()
-        # Your code goes here
-        if len(appended_data) > 0:
-            df = pd.concat(appended_data)
-        else:
-            logging.error("No received data, check date")
-            stop()
+
+        df = pd.concat(appended_data)
 
         if self.__database:
             start(self.__save_to_db, data=[df], repeat=1, max_threads=20)
@@ -658,66 +654,65 @@ class Metatrader:
         self.dataframe = dataframe
         if isinstance(symbol, tuple):
             for symbols in symbol:
-                self._symbol = symbols
-                logging.info(symbols)
+                self.__symbol = symbols
+                print(symbols)
         elif isinstance(symbol, list):
-            self._symbol = symbol
+            self.__symbol = symbol
         else:
-            self._symbol = symbol
+            self.__symbol = [symbol]
 
         if chartTF:
             if self.__database:
                 try:
                     start(self.__historyThread_save, repeat=1, max_threads=20)
                 except:
-                    logging.info("Error: unable to start History thread")
+                    print("Error: unable to start History thread")
             else:
                 try:
                     start(self.__historyThread_save, repeat=1, max_threads=20)
                 except:
-                    logging.info("Error: unable to start History thread")
+                    print("Error: unable to start History thread")
                 return self.__historyQ.get()
         else:
             q = DictSQLite("history")
             if isinstance(symbol, list):
                 try:
                     if self.dbtype == "SQLITE":
-                        df = q[f"{self._symbol[0]}"]
+                        df = q[f"{self.__symbol[0]}"]
                     else:
-                        df = self.__client.query(f"select * from {self._symbol[0]}")
-                        df = df[self._symbol[0]]
+                        df = self.__client.query(f"select * from {self.__symbol[0]}")
+                        df = df[self.__symbol[0]]
 
                         df.index.name = "date"
                 except KeyError:
-                    df = f" {self._symbol[0]}  isn't on database"
+                    df = f" {self.__symbol[0]}  isn't on database"
                     pass
             else:
                 try:
                     if self.dbtype == "SQLITE":
-                        df = q[f"{self._symbol}"]
+                        df = q[f"{self.__symbol}"]
                     else:
-                        df = self.__client.query(f"select * from {self._symbol}")
-                        df = df[self._symbol]
+                        df = self.__client.query(f"select * from {self.__symbol}")
+                        df = df[self.__symbol]
 
                         df.index.name = "date"
                 except KeyError:
-                    df = f" {self._symbol}  isn't on database"
+                    df = f" {self.__symbol}  isn't on database"
                     pass
             return df
 
     def __historyThread_save(self, data):
-        actives = self._symbol
+        actives = self.__symbol
         chartTF = self.chartTF
         fromDate = self.fromDate
         toDate = self.toDate
         main = pd.DataFrame()
         current = pd.DataFrame()
         self._count = 0
-        if self.__database:
-            try:
-                os.makedirs("DataBase")
-            except OSError:
-                pass
+        try:
+            os.makedirs("DataBase")
+        except OSError:
+            pass
         # count data
         if not isinstance(fromDate, int):
             start_date = datetime.strptime(fromDate, "%d/%m/%Y")
@@ -740,16 +735,13 @@ class Metatrader:
             toDate = start_date
             toDate += delta2
             toDate = toDate.strftime("%d/%m/%Y")
-            active = None
-            # if chartTF == "TICK":
-            #     chartConvert = 60
-            # else:
-            #     chartConvert = self.__timeframe_to_sec(chartTF)
-            if isinstance(actives, list):
-                for active in actives:
-                    self._count += 1
+
+            if chartTF == "TICK":
+                chartConvert = 60
             else:
-                active = actives
+                chartConvert = self.__timeframe_to_sec(chartTF)
+            for active in actives:
+                self._count += 1
 
                 # the first symbol on list is the main and the rest will merge
                 if active == actives[0]:
@@ -802,14 +794,26 @@ class Metatrader:
                     except KeyError:
                         pass
                 else:
-                    data = self.__api.Command(
-                        action="HISTORY",
-                        actionType="DATA",
-                        symbol=active,
-                        chartTF=chartTF,
-                        fromDate=self.__date_to_timestamp(fromDate),
-                        toDate=self.__date_to_timestamp(toDate),
-                    )
+                    # get data
+                    if fromDate and toDate:
+                        data = self.__api.Command(
+                            action="HISTORY",
+                            actionType="DATA",
+                            symbol=active,
+                            chartTF=chartTF,
+                            fromDate=self.__date_to_timestamp(fromDate),
+                            toDate=self.__date_to_timestamp(toDate),
+                        )
+
+                    elif isinstance(fromDate, str) and toDate == None:
+                        data = self.__api.Command(
+                            action="HISTORY",
+                            actionType="DATA",
+                            symbol=active,
+                            chartTF=chartTF,
+                            fromDate=self.__date_to_timestamp(fromDate),
+                            toDate=self.__date_to_timestamp(toDate),
+                        )
 
                     self.__api.Command(action="RESET")
                     try:
@@ -848,13 +852,7 @@ class Metatrader:
 
             start_date += delta
         pbar.close()
-        # Your code goes here
-        if len(appended_data) > 0:
-            df = pd.concat(appended_data)
-        else:
-            logging.error("No received data, check date")
-            stop()
-
+        df = pd.concat(appended_data)
         if self.__database:
             start(self.__save_to_db, data=[df], repeat=1, max_threads=20)
         else:
