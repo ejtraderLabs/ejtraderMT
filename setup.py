@@ -20,6 +20,7 @@ setup(
         "Topic :: Scientific/Engineering :: Information Analysis",
         "Topic :: Software Development :: Libraries",
     ],
+    install_requires=["tomli>=1.1.0"],
     setup_requires=["setuptools-rust>=1.4.0"],
     zip_safe=False,
 )
