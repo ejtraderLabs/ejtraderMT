@@ -39,7 +39,7 @@ jobs:
         run: |
           source .venv/bin/activate
           pip install maturin
-          maturin build --release --strip --no-sdist -i python
+          maturin build --release --strip -i python
       - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
         with:

@@ -3,7 +3,7 @@ from setuptools_rust import RustExtension
 
 setup(
     name="ejtradermtlib",
-    version="0.0.1",
+    version="0.1.0",
     rust_extensions=[RustExtension("ejtradermtlib", "Cargo.toml", binding=pyo3)],
     packages=["ejtradermtlib"],
     classifiers=[
