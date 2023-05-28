@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 from pytz import timezone
 from tzlocal import get_localzone
 from queue import Queue
@@ -8,7 +8,7 @@ import time
 import zmq
 
 import pandas as pd
-from ejtraderTH import start, stop
+from ejtraderTH import start
 from ejtraderDB import DictSQLite
 from influxdb import DataFrameClient
 from tqdm import tqdm
@@ -41,8 +41,8 @@ class Functions:
         self.debug = debug or True
 
         # ZeroMQ timeout in seconds
-        sys_timeout = 100
-        data_timeout = 1000
+        sys_timeout = 1000 * 1000
+        data_timeout = 1000 * 1000
 
         # initialise ZMQ context
         context = zmq.Context()
@@ -253,7 +253,7 @@ class Metatrader:
         if debug:
             logging.basicConfig(**LOGGER)
 
-        self.__api = Functions(host)
+        self.__api = Functions(host, debug=debug)
         self.real_volume = real_volume or False
         self.__tz_local = tz_local
         self.__utc_timezone = timezone("UTC")
@@ -338,8 +338,8 @@ class Metatrader:
                     logging.info(f"Error while processing {symbol}. Error message: {str(e)}")
                     attempts += 1
             if attempts == 5 and not success:
-                print(f"Check if {symbol} is avalible from {fromDate}")
-                break
+                # print(f"Check if {symbol} is avalible from {fromDate}")
+                pass
             self.__api.Command(action="RESET")
             try:
                 df = pd.DataFrame(df["data"])
@@ -764,8 +764,8 @@ class Metatrader:
                             logging.info(f"Error while processing {active}. Error message: {str(e)}")
                             attempts += 1
                     if attempts == 5 and not success:
-                        print(f"Check if {active} is avalible from {fromDate}")
-                        break
+                        # print(f"Check if {active} is avalible from {fromDate}")
+                        pass
                     
                     try:
                         self.__api.Command(action="RESET")
