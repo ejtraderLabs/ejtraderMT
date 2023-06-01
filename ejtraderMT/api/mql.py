@@ -19,11 +19,13 @@ import warnings
 # Configuração do logger
 LOGGER = {
     "datefmt": "%Y-%m-%d %H:%M:%S",
-    "format": f"[%(asctime)s.%(msecs)03d]"
-    f"[%(process)s]"
-    f"[%(funcName)s:%(lineno)d]"
-    f"[%(levelname)s]"
-    f": %(message)s",
+    "format": (
+        "[%(asctime)s.%(msecs)03d]"
+        "[%(process)s]"
+        "[%(funcName)s:%(lineno)d]"
+        "[%(levelname)s]"
+        ": %(message)s"
+    ),
     "level": logging.INFO,
     "stream": sys.stdout,
 }
@@ -280,6 +282,33 @@ class Metatrader:
     def balance(self):
         return self.__api.Command(action="BALANCE")
 
+    def symbols(self):
+        df = None
+        try:
+            df = self.__api.Command(action="LISTSYMBOLS")
+
+        except Exception as e:
+            logging.info(f"Error while processing. Error message: {str(e)}")
+
+        self.__api.Command(action="RESET")
+        if df is not None and isinstance(df, dict):
+            try:
+                if df["data"]:
+                    df = pd.DataFrame(df["data"])
+                    df.columns = [
+                        "symbol",
+                        "expiration",
+                        "type",
+                    ]
+            except Exception as e:
+                logging.info(
+                    f"Error while processing Dataframe. Error message: {str(e)}"
+                )
+                pass
+        df = df.drop_duplicates(subset="symbol", keep="first")
+
+        return df
+
     def calendar(self, symbol=None, fromDate=None, toDate=None, database=None):
         self._symbol = symbol
         self._fromDate = fromDate
@@ -322,7 +351,7 @@ class Metatrader:
             toDate = toDate.strftime("%d/%m/%Y")
             attempts = 0
             success = False
-           
+
             while not success and attempts < 5:
                 try:
                     df = self.__api.Command(
@@ -335,39 +364,47 @@ class Metatrader:
                     success = True
 
                 except Exception as e:
-                    logging.info(f"Error while processing {symbol}. Error message: {str(e)}")
+                    logging.info(
+                        f"Error while processing {symbol}. Error message: {str(e)}"
+                    )
                     attempts += 1
             if attempts == 5 and not success:
                 # print(f"Check if {symbol} is avalible from {fromDate}")
                 pass
             self.__api.Command(action="RESET")
-            try:
-                df = pd.DataFrame(df["data"])
-                df.columns = [
-                    "date",
-                    "currency",
-                    "impact",
-                    "event",
-                    "country",
-                    "actual",
-                    "forecast",
-                    "previous",
-                ]
-                df["date"] = pd.to_datetime(df["date"], errors="coerce")
-                df = df.dropna(subset=["date"])
-                df = df.set_index("date")
-                df.index = pd.to_datetime(df.index)
-            except Exception as e:
-                logging.info(f"Error while processing {symbol} Dataframe. Error message: {str(e)}")
-                pass
-            
+            if df is not None and isinstance(df, dict):
+                try:
+                    if df["data"]:
+                        df = pd.DataFrame(df["data"])
+                        df.columns = [
+                            "date",
+                            "currency",
+                            "impact",
+                            "event",
+                            "country",
+                            "actual",
+                            "forecast",
+                            "previous",
+                        ]
+                        df["date"] = pd.to_datetime(df["date"], errors="coerce")
+                        df = df.dropna(subset=["date"])
+                        df = df.set_index("date")
+                        df.index = pd.to_datetime(df.index)
+                except Exception as e:
+                    logging.info(
+                        f"Error while processing {symbol} Dataframe. Error message: {str(e)}"
+                    )
+                    pass
+
             appended_data.append(df)
             start_date += delta
         pbar.close()
         try:
             df = pd.concat(appended_data)
         except Exception as e:
-            logging.info(f"Error while processing {symbol} Dataframe. Error message: {str(e)}")
+            logging.info(
+                f"Error while processing {symbol} Dataframe. Error message: {str(e)}"
+            )
             pass
 
         if self.__database:
@@ -632,10 +669,13 @@ class Metatrader:
         return TIMECANDLE[timeframe]
 
     def __set_utc_or_localtime_tz_df(self, df):
-        df.index = df.index.tz_localize(self.__utc_brocker_offset)
-        if self.__tz_local:
-            df.index = df.index.tz_convert(self.__my_timezone)
-        df.index = df.index.tz_localize(None)
+        try:
+            df.index = df.index.tz_localize(self.__utc_brocker_offset)
+            if self.__tz_local:
+                df.index = df.index.tz_convert(self.__my_timezone)
+            df.index = df.index.tz_localize(None)
+        except:
+            pass
         return df
 
     def history(
@@ -666,13 +706,18 @@ class Metatrader:
             if self.__database:
                 try:
                     start(self.__historyThread_save, repeat=1, max_threads=20)
-                except:
-                    print("Error: unable to start History thread")
+                except Exception as e:
+                    logging.info(
+                        f"Error: unable to start History thread Error message: {str(e)}"
+                    )
             else:
                 try:
                     start(self.__historyThread_save, repeat=1, max_threads=20)
-                except:
-                    print("Error: unable to start History thread")
+                except Exception as e:
+                    logging.info(
+                        f"Error: unable to start History thread Error message: {str(e)}"
+                    )
+
                 return self.__historyQ.get()
         else:
             q = DictSQLite("history")
@@ -730,6 +775,8 @@ class Metatrader:
         days_count = diff_days.days
         pbar = tqdm(total=abs(days_count))
         appended_data = []
+        active = None
+        df = None
         while start_date <= end_date:
             pbar.update(delta.days)
             fromDate = start_date.strftime("%d/%m/%Y")
@@ -739,10 +786,10 @@ class Metatrader:
             attempts = 0
             success = False
 
-            if chartTF == "TICK":
-                chartConvert = 60
-            else:
-                chartConvert = self.__timeframe_to_sec(chartTF)
+            # if chartTF == "TICK":
+            #     chartConvert = 60
+            # else:
+            #     chartConvert = self.__timeframe_to_sec(chartTF)
             for active in actives:
                 self._count += 1
 
@@ -761,45 +808,54 @@ class Metatrader:
                             )
                             success = True
                         except Exception as e:
-                            logging.info(f"Error while processing {active}. Error message: {str(e)}")
+                            logging.info(
+                                f"Error while processing {active} from {fromDate}. Error message: {str(e)}"
+                            )
                             attempts += 1
                     if attempts == 5 and not success:
-                        # print(f"Check if {active} is avalible from {fromDate}")
+                        logging.info(f"Check if {active} is avalible from {fromDate}")
                         pass
-                    
+
                     try:
                         self.__api.Command(action="RESET")
-                    except:
-                        pass
-                    
-                    try:
-                        main = pd.DataFrame(data["data"])
-                        main = main.set_index([0])
-                        main.index.name = "date"
-
-                        # TICK DATA
-                        if chartTF == "TICK":
-                            main.columns = ["bid", "ask"]
-                            main.index = pd.to_datetime(main.index, unit="ms")
-                        else:
-                            main.index = pd.to_datetime(main.index, unit="s")
-                            if self.real_volume:
-                                del main[5]
-                            else:
-                                del main[6]
-                            main.columns = [
-                                "open",
-                                "high",
-                                "low",
-                                "close",
-                                "volume",
-                                "spread",
-                            ]
                     except Exception as e:
-                        # logging.info(f"Error while processing Dataframe {active}. Error message: {str(e)}")
+                        logging.info(
+                            f"Error while processing RESET. Error message: {str(e)}"
+                        )
                         pass
+
+                    if data is not None and isinstance(data, dict):
+                        try:
+                            if data["data"]:
+                                main = pd.DataFrame(data["data"])
+                                main = main.set_index([0])
+                                main.index.name = "date"
+
+                                # TICK DATA
+                                if chartTF == "TICK":
+                                    main.columns = ["bid", "ask"]
+                                    main.index = pd.to_datetime(main.index, unit="ms")
+                                else:
+                                    main.index = pd.to_datetime(main.index, unit="s")
+                                    if self.real_volume:
+                                        del main[5]
+                                    else:
+                                        del main[6]
+                                    main.columns = [
+                                        "open",
+                                        "high",
+                                        "low",
+                                        "close",
+                                        "volume",
+                                        "spread",
+                                    ]
+                        except Exception as e:
+                            logging.info(
+                                f"Error while processing Dataframe {active} from {fromDate}. Error message: {str(e)}"
+                            )
+                            pass
                 else:
-                    while not success and attempts < 5:
+                    while not success and attempts < 2:
                         try:
                             data = self.__api.Command(
                                 action="HISTORY",
@@ -811,72 +867,93 @@ class Metatrader:
                             )
                             success = True
                         except Exception as e:
-                            logging.info(f"Error while processing {active}. Error message: {str(e)}")
+                            logging.info(
+                                f"Error while processing {active}. Error message: {str(e)}"
+                            )
                             attempts += 1
-                    if attempts == 5 and not success:
-                        print(f"Check if {active} is avalible from {fromDate}")
+                    if attempts == 2 and not success:
+                        logging.info(f"Check if {active} is avalible from {fromDate}")
                         pass
 
                     try:
                         self.__api.Command(action="RESET")
                     except Exception as e:
-                        logging.info(f"Error while processing commad Reset {active}. Error message: {str(e)}")
+                        logging.info(
+                            f"Error while processing commad Reset {active}. Error message: {str(e)}"
+                        )
                         pass
-                    try:
-                        current = pd.DataFrame(data["data"])
-                        current = current.set_index([0])
-                        current.index.name = "date"
-                        active = active.lower()
-                        # TICK DATA
-                        if chartTF == "TICK":
-                            current.index = pd.to_datetime(current.index, unit="ms")
-                            current.columns = [f"{active}_bid", f"{active}_ask"]
-                        else:
-                            current.index = pd.to_datetime(current.index, unit="s")
-                            if self.real_volume:
-                                del current[5]
-                            else:
-                                del current[6]
+                    if data is not None and isinstance(data, dict):
+                        try:
+                            if data["data"]:
+                                current = pd.DataFrame(data["data"])
+                                current = current.set_index([0])
+                                current.index.name = "date"
+                                active = active.lower()
+                                # TICK DATA
+                                if chartTF == "TICK":
+                                    current.index = pd.to_datetime(
+                                        current.index, unit="ms"
+                                    )
+                                    current.columns = [f"{active}_bid", f"{active}_ask"]
+                                else:
+                                    current.index = pd.to_datetime(
+                                        current.index, unit="s"
+                                    )
+                                    if self.real_volume:
+                                        del current[5]
+                                    else:
+                                        del current[6]
 
-                            current.columns = [
-                                f"{active}_open",
-                                f"{active}_high",
-                                f"{active}_low",
-                                f"{active}_close",
-                                f"{active}_volume",
-                                f"{active}_spread",
-                            ]
+                                    current.columns = [
+                                        f"{active}_open",
+                                        f"{active}_high",
+                                        f"{active}_low",
+                                        f"{active}_close",
+                                        f"{active}_volume",
+                                        f"{active}_spread",
+                                    ]
 
-                        # main = pd.merge(main, current, how='inner',
-                        #                 left_index=True, right_index=True)
-                        main = pd.merge(main, current, on="date")
-                    except Exception as e:
-                        logging.info(f"Error while processing Dataframe {active}. Error message: {str(e)}")
-                        pass
+                                # main = pd.merge(main, current, how='inner',
+                                #                 left_index=True, right_index=True)
+                                main = pd.merge(main, current, on="date")
+                        except Exception as e:
+                            logging.info(
+                                f"Error while merge Dataframe {active}. Error message: {str(e)}"
+                            )
+                            pass
+
             try:
                 main = main.loc[~main.index.duplicated(keep="first")]
                 appended_data.append(main)
             except Exception as e:
-                logging.info(f"Error while processing {active}. Error message: {str(e)}")
+                logging.info(
+                    f"Error while finishing Dataframe for {active}. Error message: {str(e)}"
+                )
                 pass
             start_date += delta
         pbar.close()
-        try:
-            df = pd.concat(appended_data)
-        except Exception as e:
-            logging.info(f"Error while processing {active}. Error message: {str(e)}")
-            pass
-        
-        if self.__database:
-            start(self.__save_to_db, data=[df], repeat=1, max_threads=20)
-        else:
-            try:
-                self.__set_utc_or_localtime_tz_df(df)
-                self.__historyQ.put(df)
 
+        if len(appended_data) > 0:
+            try:
+                df = pd.concat(appended_data)
             except Exception as e:
-                logging.info(f"Error while processing {active}. Error message: {str(e)}")
+                logging.info(
+                    f"Error while processing {active}. Error message: {str(e)}"
+                )
                 pass
+
+            if self.__database:
+                start(self.__save_to_db, data=[df], repeat=1, max_threads=20)
+            else:
+                try:
+                    self.__set_utc_or_localtime_tz_df(df)
+                    self.__historyQ.put(df)
+
+                except Exception as e:
+                    logging.info(
+                        f"Error while processing {active}. Error message: {str(e)}"
+                    )
+                    pass
 
     def __save_to_db(self, df):
         if self.dbtype == "SQLITE":
@@ -885,7 +962,9 @@ class Metatrader:
                 self.__set_utc_or_localtime_tz_df(df)
 
             except Exception as e:
-                logging.info(f"Error while processing database. Error message: {str(e)}")
+                logging.info(
+                    f"Error while processing database. Error message: {str(e)}"
+                )
                 pass
 
             q[f"{self._symbol}"] = df
@@ -893,7 +972,9 @@ class Metatrader:
             try:
                 self.__set_utc_or_localtime_tz_df(df)
             except Exception as e:
-                logging.info(f"Error while processing utc or localtime tz. Error message: {str(e)}")
+                logging.info(
+                    f"Error while processing utc or localtime tz. Error message: {str(e)}"
+                )
                 pass
         if self.dbtype == "INFLUXDB":
             self.__client.write_points(df, f"{self._symbol}", protocol=self.protocol)
