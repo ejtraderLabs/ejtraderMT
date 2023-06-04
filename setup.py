@@ -17,6 +17,7 @@ def requirements(filename):
 
 
 # Version: 3.15
+#
 setup(
     name="ejtraderMT",
     version="3.15",
