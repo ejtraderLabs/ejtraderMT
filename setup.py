@@ -16,7 +16,7 @@ def requirements(filename):
     return reqs
 
 
-# Version: 3.14
+# Version: 3.15
 setup(
     name="ejtraderMT",
     version="3.15",
