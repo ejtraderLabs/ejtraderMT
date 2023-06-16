@@ -16,10 +16,10 @@ def requirements(filename):
     return reqs
 
 
-# Version: 3.16
+# Version: 3.17
 setup(
     name="ejtraderMT",
-    version="3.16",
+    version="3.17",
     packages=find_packages(),
     url="https://ejtraderMT.readthedocs.io/",
     download_url="https://ejtrader.com",
