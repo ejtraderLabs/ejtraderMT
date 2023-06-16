@@ -34,7 +34,7 @@ LOGGER = {
 class Functions:
     def __init__(self, host=None, debug=None):
         self.HOST = host or "localhost"
-        self.SYS_PORT = 15555  # REP/REQ port
+        self.SYS_PORT = 15557  # REP/REQ port
 
         # ZeroMQ timeout in seconds
         sys_timeout = 1000
