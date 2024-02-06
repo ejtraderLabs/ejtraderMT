@@ -32,9 +32,9 @@ LOGGER = {
 
 
 class Functions:
-    def __init__(self, host=None, debug=None):
+    def __init__(self, host=None, debug=None, port=15557):
         self.HOST = host or "localhost"
-        self.SYS_PORT = 15557  # REP/REQ port
+        self.SYS_PORT = port  # REP/REQ port
 
         # ZeroMQ timeout in seconds
         sys_timeout = 1000
@@ -126,11 +126,12 @@ class Metatrader:
         dbuser=None,
         dbname=None,
         debug=False,
+        port=15557
     ):
         if debug:
             logging.basicConfig(**LOGGER)
 
-        self.__api = Functions(host, debug=debug)
+        self.__api = Functions(host, debug=debug, port=port)
         self.real_volume = real_volume or False
         self.__tz_local = tz_local
         self.__utc_timezone = timezone("UTC")
