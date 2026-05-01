@@ -10,7 +10,6 @@ import zmq
 import pandas as pd
 from ejtraderTH import start
 from ejtraderDB import DictSQLite
-from influxdb import DataFrameClient
 from tqdm import tqdm
 import logging
 import sys
@@ -142,7 +141,13 @@ class Metatrader:
             warnings.warn(
                 "INFLUXDB will be removed in future versions.", DeprecationWarning
             )
-            # if dbtype is influxdb
+            try:
+                from influxdb import DataFrameClient
+            except ImportError as e:
+                raise ImportError(
+                    "InfluxDB support requires the optional 'influxdb' extra. "
+                    "Install with: pip install ejtraderMT[influxdb]"
+                ) from e
             self.dbhost = dbhost or "localhost"
             self.dbport = dbport or "8086"
             self.dbuser = dbuser or "root"
